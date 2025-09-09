@@ -35,3 +35,10 @@ jobs:
     - name: Build
       working-directory: ./ValkyrieAutoTranslator/ValkyrieAutoTranslator
       run: dotnet build --no-restore -c Release
+
+    # Uploads the build artifacts
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ValkyrieAutoTranslator
+        path: ./ValkyrieAutoTranslator/ValkyrieAutoTranslator/bin/Release/net9.0/
