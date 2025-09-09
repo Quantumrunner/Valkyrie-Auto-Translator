@@ -3,10 +3,12 @@
 ## Prerequisites
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) installed
 
-## Build the Application
+## Run the Application
 1. Configure settings in `appsettings.json`.
-1. Open a terminal in the project root directory.
-1. In the terminal, execute: `ValkyrieAutoTranslator.exe`.
+2. Open a terminal (like Command Prompt or PowerShell) in the output directory.
+3. In the terminal, execute the application by typing `ValkyrieAutoTranslator.exe` and pressing Enter.
+
+Alternatively, you can navigate to the output directory in Windows File Explorer and double-click on `ValkyrieAutoTranslator.exe` to run it.
 
 # Settings
 For detailed information on configuring the application, please refer to appsettings.json.
