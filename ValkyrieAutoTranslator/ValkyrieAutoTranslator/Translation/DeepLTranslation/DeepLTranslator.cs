@@ -7,7 +7,7 @@ namespace Valkyrie.AutoTranslator
     {
         internal const char SpecialGlossaryChar = '␣';
 
-        public static async Task<string> Translate(string text, string sourceLang, string targetLang, string apiKey, string glossaryId = null, string deepLFormality = null)
+        public static async Task<string> Translate(string deepLApiMode, string text, string sourceLang, string targetLang, string apiKey, string glossaryId = null, string deepLFormality = null)
         {
             using (var client = new HttpClient())
             {
@@ -38,7 +38,8 @@ namespace Valkyrie.AutoTranslator
 
                         using (var content = new FormUrlEncodedContent(keyValuePairs))
                         {
-                            var response = await client.PostAsync("https://api-free.deepl.com/v2/translate", content);
+                            string apiUrl = deepLApiMode == "paid" ? "https://api.deepl.com/v2/translate" : "https://api-free.deepl.com/v2/translate";
+                            var response = await client.PostAsync(apiUrl, content);
 
                             if ((int)response.StatusCode == 429 || (int)response.StatusCode == 503)
                             {

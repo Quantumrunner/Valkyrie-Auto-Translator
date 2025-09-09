@@ -19,7 +19,7 @@ namespace Valkyrie.AutoTranslator
 
             bool translate = bool.Parse(configuration["translation:translate"] ?? "false");
             string translationProvider = configuration["translation:translatorProvider"];
-            string deepLGlossaryFilePath = configuration["translation:glossaryFilePath"];
+            string deepLGlossaryFilePath = configuration["translation:deepL:deepLGlossaryFilePath"];
             string sourceLanguage = configuration["translation:sourceLanguage"];
             string targetLanguageName = configuration["translation:targetLanguageName"];
             string targetLanguage = configuration["translation:targetLanguage"];
@@ -27,6 +27,7 @@ namespace Valkyrie.AutoTranslator
             string categoryId = configuration["translation:azure:azureCategoryId"];
             bool deepLApiUpdateGlossary = bool.Parse(configuration["translation:deepL:deepLApiUpdateGlossary"] ?? "false");
             string deepLFormality = configuration["translation:deepL:deepLFormality"];
+            string deepLApiMode = configuration["translation:deepL:deepLApiMode"];
 
             string llmPrompt = configuration["llm:llmPrompt"];
             bool useLlmApi = bool.Parse(configuration["llm:useLlmApi"] ?? "false");
@@ -41,7 +42,7 @@ namespace Valkyrie.AutoTranslator
 
             AutoTranslator autoTranslator = new AutoTranslator(
                 inputPath, inputFileName, outputPath, outputFileNameAdditionalPart, translate, targetLanguageName, sourceLanguageName, targetLanguage, sourceLanguage,
-                categoryId, azureAuth, deepLApiUpdateGlossary, useLlmApi, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepSeekApiKey, llmPrompt
+                categoryId, azureAuth, deepLApiUpdateGlossary, deepLApiMode, useLlmApi, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepSeekApiKey, llmPrompt
             );
             autoTranslator.CreateTranslatedFiles();
         }

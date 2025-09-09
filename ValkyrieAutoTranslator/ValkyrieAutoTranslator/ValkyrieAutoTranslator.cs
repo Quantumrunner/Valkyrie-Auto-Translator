@@ -24,6 +24,7 @@ namespace Valkyrie.AutoTranslator
         private readonly string _deepLApiKey;
         private readonly string _deepLGlossaryId;
         private readonly string _deepLFormality;
+        private readonly string _deepLApiMode;
         private readonly string _deepSeekApiKey;
         private readonly string _llmPrompt;
         private readonly bool _deepLApiUpdateGlossary;
@@ -46,6 +47,7 @@ namespace Valkyrie.AutoTranslator
             string azureCategoryId,
             string azureKey,
             bool deepLApiUpdateGlossary,
+            string deepLApiMode,
             bool useLlmApi,
             string outputDelimiter = null,
             string translatorProvider = TranslatorConstants.ApiNameAzure,
@@ -72,6 +74,7 @@ namespace Valkyrie.AutoTranslator
             _deepLApiKey = deepLApiKey;
             _deepLFormality = deepLFormality;
             _deepSeekApiKey = deepSeekApiKey;
+            _deepLApiMode = deepLApiMode;
             _llmPrompt = llmPrompt;
             _deepLApiUpdateGlossary = deepLApiUpdateGlossary;
             _useLlmApi = useLlmApi;
@@ -139,7 +142,7 @@ namespace Valkyrie.AutoTranslator
                     }
 
                 }
-            }  
+            }
         }
 
         public void CreateTranslatedFiles()
@@ -250,7 +253,7 @@ namespace Valkyrie.AutoTranslator
                     if (_translatorProvider == TranslatorConstants.ApiNameDeepL)
                     {
                         AutoTranslatorLogger.Info($"Start using DeepL translator for key {key}");
-                        translatedValue = DeepLTranslator.Translate(value, _sourceLanguage, _targetLanguage, _deepLApiKey, _deepLGlossaryId, _deepLFormality).GetAwaiter().GetResult();
+                        translatedValue = DeepLTranslator.Translate(_deepLApiMode, value, _sourceLanguage, _targetLanguage, _deepLApiKey, _deepLGlossaryId, _deepLFormality).GetAwaiter().GetResult();
                         AutoTranslatorLogger.Success($"Finished using DeepL translator for {key}");
                     }
                     else
