@@ -1,0 +1,41 @@
+# This GitHub Actions workflow builds the .NET console application.
+#
+# It is triggered on:
+# - Pushes to any branch.
+# - Manual workflow dispatch (from the Actions tab in GitHub).
+
+name: .NET Build
+
+on:
+  push:
+  workflow_dispatch: # Allows manual runs
+
+jobs:
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Scans for secrets and fails if any are found.
+    - name: Secret Scan
+      uses: trufflehog/trufflehog-actions@v0.2.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
+    # Sets up the .NET SDK
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    # Restores project dependencies
+    - name: Restore dependencies
+      run: dotnet restore
+
+    # Builds the project in Release configuration
+    - name: Build
+      run: dotnet build --no-restore -c Release
