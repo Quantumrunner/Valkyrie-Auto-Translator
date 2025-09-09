@@ -28,8 +28,10 @@ jobs:
 
     # Restores project dependencies
     - name: Restore dependencies
+      working-directory: ./ValkyrieAutoTranslator/ValkyrieAutoTranslator
       run: dotnet restore
 
     # Builds the project in Release configuration
     - name: Build
+      working-directory: ./ValkyrieAutoTranslator/ValkyrieAutoTranslator
       run: dotnet build --no-restore -c Release
