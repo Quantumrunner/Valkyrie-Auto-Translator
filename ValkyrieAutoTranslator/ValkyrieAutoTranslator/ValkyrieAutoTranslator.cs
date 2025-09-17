@@ -264,6 +264,9 @@ namespace Valkyrie.AutoTranslator
                     }
                 }
 
+                translatedValue = AutoTranslatorHelpers.RemoveKeepTags(translatedValue);
+                translatedValue = AutoTranslatorHelpers.RevertNoTranslationTags(translatedValue);
+
                 if (_useLlmApi)
                 {
                     AutoTranslatorLogger.Info($"Start using DeepSeek LLM for key {key}");
@@ -273,8 +276,6 @@ namespace Valkyrie.AutoTranslator
             }
 
             // Remove <keep> tags after translation
-            translatedValue = AutoTranslatorHelpers.RemoveKeepTags(translatedValue);
-            translatedValue = AutoTranslatorHelpers.RevertNoTranslationTags(translatedValue);
             translatedValue = AutoTranslatorHelpers.ReplaceDoubleQuotesWithPipes(translatedValue);
             translatedValue = AutoTranslatorHelpers.EnsureStartWithThreePipes(translatedValue, _targetLanguage);
             translatedValue = AutoTranslatorHelpers.EnsureStartWithPipesAlsoEndsWithPipes(translatedValue, _targetLanguage);
