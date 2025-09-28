@@ -142,14 +142,15 @@ namespace Valkyrie.AutoTranslator
 
         internal static string ReplaceDoubleQuotesWithPipes(string value)
         {
-            if (string.IsNullOrEmpty(value))
+           if (string.IsNullOrEmpty(value))
                 return value;
 
-            // Replace double quotes at the start of a line
-            value = Regex.Replace(value, @"(^|\r?\n)""", "$1|||");
-
-            // Replace double quotes at the end of a line
-            value = Regex.Replace(value, @"""(\r?\n|$)", "|||$1");
+            // Check if the string starts and ends with quotes
+            if (value.StartsWith("\"") && value.EndsWith("\""))
+            {
+                // Remove the first and last quote, then wrap with pipes
+                return "|||" + value.Substring(1, value.Length - 2) + "|||";
+            }
 
             return value;
         }
@@ -365,6 +366,17 @@ namespace Valkyrie.AutoTranslator
 
             // Replace all '\' not followed by 'n' with '\n'
             return Regex.Replace(value, @"\\(?!n)", @"\n");
+        }
+
+        internal static string ReplaceWhiteSpacesBetweenNewlines(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            // This regex finds a newline sequence (\n), followed by one or more whitespace characters,
+            // followed by another newline sequence, and replaces it with just the two newline sequences.
+            // e.g. \n \n becomes \n\n
+            return Regex.Replace(value, @"(\\n)\s+(\\n)", "$1$2");
         }
 
         internal static string ReplaceDeepLSpecialGlossaryChar(string translatedValue)

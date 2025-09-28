@@ -203,23 +203,21 @@ namespace Valkyrie.AutoTranslator
 
         private void TranslateData(List<ValkyrieLanguageData> newData, ValkyrieLanguageData data)
         {
-            data.Value = TranslateByPreValue(data.Key, data.Value);
+            data.Value = TranslateText(data.Key, data.Value);
             newData.Add(data);
         }
 
-        private string TranslateByPreValue(string key, string value)
+        private string TranslateText(string key, string value)
         {
-            string valueBefore = value;
-            //AutoTranslatorLogger.Info($"Before: {valueBefore}");
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
 
             if (value.Equals(_sourceLanguageName))
             {
                 return _targetLanguageName;
             }
-
-            var curlyBracketWords = AutoTranslatorHelpers.IdentifyWordsInCurlyBrackets(value);
-
-            string translatedValue = value;
 
             string[] skipValues = new string[]
             {
@@ -234,12 +232,111 @@ namespace Valkyrie.AutoTranslator
                 return value;
             }
 
+            // Handle surrounding markers like ||| or "
+            string prefix = "";
+            string suffix = "";
+            string coreValue = value;
+
+            if (coreValue.StartsWith("|||") && coreValue.EndsWith("|||"))
+            {
+                prefix = "|||";
+                suffix = "|||";
+                coreValue = coreValue.Substring(3, coreValue.Length - 6);
+            }
+            else if (AutoTranslatorHelpers.IsEncapsulatedWithQuotes(coreValue))
+            {
+                prefix = coreValue.Substring(0, 1);
+                suffix = coreValue.Substring(coreValue.Length - 1, 1);
+                coreValue = coreValue.Substring(1, coreValue.Length - 2);
+            }
+
+            var sentences = SplitIntoSentences(coreValue);
+            var translatedSentences = new List<string>();
+
+            foreach (var sentence in sentences)
+            {
+                translatedSentences.Add(TranslateSentence(key, sentence));
+            }
+
+            // Build the final string with smarter joining to avoid extra spaces around HTML tags.
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < translatedSentences.Count; i++)
+            {
+                string current = translatedSentences[i];
+                sb.Append(current);
+
+                // Add a space if the current part and the next part are both actual text (not tags or just whitespace).
+                if (i < translatedSentences.Count - 1)
+                {
+                    string next = translatedSentences[i + 1];
+                    bool currentIsText = !current.StartsWith("<") && !current.EndsWith(">");
+                    bool nextIsText = !next.StartsWith("<") && !next.EndsWith(">");
+                    if (currentIsText && nextIsText) sb.Append(" ");
+                }
+            }
+            string finalTranslatedValue = sb.ToString();
+
+            string combinedFinal = prefix + finalTranslatedValue + suffix;
+            combinedFinal = AutoTranslatorHelpers.ReplaceDoubleQuotesWithPipes(combinedFinal);
+            combinedFinal = AutoTranslatorHelpers.EnsureStartWithThreePipes(combinedFinal, _targetLanguage);
+            combinedFinal = AutoTranslatorHelpers.EnsureStartWithPipesAlsoEndsWithPipes(combinedFinal, _targetLanguage);
+            combinedFinal = AutoTranslatorHelpers.ReplaceWhiteSpacesBetweenNewlines(combinedFinal);
+            return combinedFinal;
+        }
+
+        private List<string> SplitIntoSentences(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return new List<string>();
+
+            // Regex to split text into sentences. It splits after sentence-ending punctuation (. ! ?)
+            // followed by whitespace, or after one or more newlines (\n). It also handles splitting
+            // around HTML tags and captures delimiters like newlines.
+            // This will split the string, keeping the delimiters as separate entries in the resulting array.
+            var regex = new System.Text.RegularExpressions.Regex(@"(\s*\\n\s*|(?<=[.!?])\s+|<i>|</i>|<b>|</b>)");
+            var sentences = regex.Split(text).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+
+            return sentences;
+        }
+
+        private string TranslateSentence(string key, string value)
+        {
+            string valueBefore = value;
+
+            // If the "sentence" is just whitespace or newlines, don't translate it.
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+
+            // Regex to check if the string contains any letters.
+            // If not, it's likely just punctuation, numbers, or special characters (like \n)
+            // and should not be translated. This also handles HTML tags and escaped newlines.
+            string trimmedValue = value.Trim();
+
+            // Create a test string where known non-translatable tokens are removed.
+            string testValue = trimmedValue;
+            testValue = System.Text.RegularExpressions.Regex.Replace(testValue, @"\\n", ""); // Remove \n sequences
+            testValue = System.Text.RegularExpressions.Regex.Replace(testValue, @"</?[ib]>", ""); // Remove <i>, <b> tags
+
+            // A string is translatable if it still contains letters after removing formatting tokens.
+            bool containsRealText = System.Text.RegularExpressions.Regex.IsMatch(testValue, @"[a-zA-Z]");
+
+            if (!containsRealText)
+            {
+                AutoTranslatorLogger.Info($"Skipping translation for formatting or non-alphabetic sentence: {value}");
+                return value;
+            }
+
+            var curlyBracketWords = AutoTranslatorHelpers.IdentifyWordsInCurlyBrackets(value);
+
+            string translatedValue = value;
+
             //use cached value if available
             if (translationCache.Any(c => c.Key.Equals(value, System.StringComparison.OrdinalIgnoreCase)))
             {
                 translatedValue = translationCache.FirstOrDefault(c => c.Key == value).Value;
                 AutoTranslatorLogger.Info($"Using cached value for: {value}");
-
             }
             //if not cached, user the translator API
             else
@@ -252,13 +349,13 @@ namespace Valkyrie.AutoTranslator
 
                     if (_translatorProvider == TranslatorConstants.ApiNameDeepL)
                     {
-                        AutoTranslatorLogger.Info($"Start using DeepL translator for key {key}");
+                        AutoTranslatorLogger.Info($"Start using DeepL translator for sentence: {value}");
                         translatedValue = DeepLTranslator.Translate(_deepLApiMode, value, _sourceLanguage, _targetLanguage, _deepLApiKey, _deepLGlossaryId, _deepLFormality).GetAwaiter().GetResult();
-                        AutoTranslatorLogger.Success($"Finished using DeepL translator for {key}");
+                        AutoTranslatorLogger.Success($"Finished using DeepL translator for sentence: {value}");
                     }
                     else
                     {
-                        AutoTranslatorLogger.Info($"Start using Azure translator for key {key}");
+                        AutoTranslatorLogger.Info($"Start using Azure translator for sentence: {value}");
                         translatedValue = AzureTranslator.Translate(value, translationCache, _sourceLanguage, _targetLanguage, _azureKey, _azureCategoryId).GetAwaiter().GetResult();
                         AutoTranslatorLogger.Success($"Finished using Azure translator for {key}");
                     }
@@ -267,18 +364,22 @@ namespace Valkyrie.AutoTranslator
                 translatedValue = AutoTranslatorHelpers.RemoveKeepTags(translatedValue);
                 translatedValue = AutoTranslatorHelpers.RevertNoTranslationTags(translatedValue);
 
-                if (_useLlmApi)
+                // Check if the translated value contains more than one word before calling the LLM.
+                bool isSingleWord = !translatedValue.Trim().Contains(" ");
+
+                if (_useLlmApi && !isSingleWord)
                 {
-                    AutoTranslatorLogger.Info($"Start using DeepSeek LLM for key {key}");
+                    AutoTranslatorLogger.Info($"Start using DeepSeek LLM for sentence: {translatedValue}");
                     translatedValue = DeepSeekApi.ExecutePromptAsync(_deepSeekApiKey, _llmPrompt, key, translatedValue).GetAwaiter().GetResult();
-                    AutoTranslatorLogger.Success($"Finished using DeepSeek LLM for key {key}");
+                    AutoTranslatorLogger.Success($"Finished using DeepSeek LLM for sentence: {value}");
+                }
+                else if (_useLlmApi && isSingleWord)
+                {
+                    AutoTranslatorLogger.Info($"Skipping LLM for single-word sentence: {translatedValue}");
                 }
             }
 
             // Remove <keep> tags after translation
-            translatedValue = AutoTranslatorHelpers.ReplaceDoubleQuotesWithPipes(translatedValue);
-            translatedValue = AutoTranslatorHelpers.EnsureStartWithThreePipes(translatedValue, _targetLanguage);
-            translatedValue = AutoTranslatorHelpers.EnsureStartWithPipesAlsoEndsWithPipes(translatedValue, _targetLanguage);
             translatedValue = AutoTranslatorHelpers.FindAndReplacedTranslatedCurlyBracketsWords(translatedValue, curlyBracketWords);
             translatedValue = AutoTranslatorHelpers.ReplaceQuotesWithEnglishspecialCharacterQuotation(translatedValue, _targetLanguage);
             translatedValue = AutoTranslatorHelpers.ReplaceBackslashNotFollowedByNWithLineBreak(translatedValue);
@@ -295,7 +396,7 @@ namespace Valkyrie.AutoTranslator
 
             translationCache.Add(new KeyValuePair<string, string>(valueBefore, translatedValue));
 
-            AutoTranslatorLogger.Success($"Finished all operations for key: {key}");
+            AutoTranslatorLogger.Success($"Finished all operations for sentence: {value}");
             return translatedValue;
         }
     }
