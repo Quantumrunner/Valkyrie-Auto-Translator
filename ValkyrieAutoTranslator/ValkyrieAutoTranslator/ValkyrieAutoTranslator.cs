@@ -24,6 +24,8 @@ namespace Valkyrie.AutoTranslator
         private readonly string _deepLApiKey;
         private readonly string _deepLGlossaryId;
         private readonly string _deepLFormality;
+        private readonly string _deepLContextDefault;
+        private readonly string _deepLContextActivation;
         private readonly string _deepLApiMode;
         private readonly string _deepSeekApiKey;
         private readonly string _llmPrompt;
@@ -55,6 +57,8 @@ namespace Valkyrie.AutoTranslator
             string glossaryFilePath = null,
             string translationCacheFilePath = null,
             string deepLFormality = null,
+            string deepLContextDefault = null,
+            string deepLContextActivation = null,
             string deepSeekApiKey = null,
             string llmPrompt = null)
         {
@@ -75,6 +79,8 @@ namespace Valkyrie.AutoTranslator
             _deepLFormality = deepLFormality;
             _deepSeekApiKey = deepSeekApiKey;
             _deepLApiMode = deepLApiMode;
+            _deepLContextDefault = deepLContextDefault;
+            _deepLContextActivation = deepLContextActivation;
             _llmPrompt = llmPrompt;
             _deepLApiUpdateGlossary = deepLApiUpdateGlossary;
             _useLlmApi = useLlmApi;
@@ -100,7 +106,7 @@ namespace Valkyrie.AutoTranslator
             AutoTranslatorLogger.Info($"translatorProvider={_translatorProvider}");
             AutoTranslatorLogger.Info($"useLlmApi={_useLlmApi}");
 
-            AutoTranslatorLogger.Info($"Properties that will not be logged here=deepSeekApiKey, llmPrompt, deepLApiKey");
+            AutoTranslatorLogger.Info($"Properties that will not be logged here=deepSeekApiKey, llmPrompt, deepLApiKey, deepLContextDefault, deepLContextActivation, azureKey");
 
             // Log all properties except for API keys
             if (useLlmApi)
@@ -350,7 +356,7 @@ namespace Valkyrie.AutoTranslator
                     if (_translatorProvider == TranslatorConstants.ApiNameDeepL)
                     {
                         AutoTranslatorLogger.Info($"Start using DeepL translator for sentence: {value}");
-                        translatedValue = DeepLTranslator.Translate(_deepLApiMode, value, _sourceLanguage, _targetLanguage, _deepLApiKey, _deepLGlossaryId, _deepLFormality).GetAwaiter().GetResult();
+                        translatedValue = DeepLTranslator.Translate(_deepLApiMode, key, value, _sourceLanguage, _targetLanguage, _deepLApiKey, _deepLGlossaryId, _deepLContextDefault, _deepLContextActivation, _deepLFormality).GetAwaiter().GetResult();
                         AutoTranslatorLogger.Success($"Finished using DeepL translator for sentence: {value}");
                     }
                     else
@@ -400,5 +406,4 @@ namespace Valkyrie.AutoTranslator
             return translatedValue;
         }
     }
-
 }

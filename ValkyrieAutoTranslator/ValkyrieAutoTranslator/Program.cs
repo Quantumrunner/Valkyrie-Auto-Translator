@@ -26,6 +26,8 @@ namespace Valkyrie.AutoTranslator
             string sourceLanguageName = configuration["translation:sourceLanguageName"];
             string categoryId = configuration["translation:azure:azureCategoryId"];
             bool deepLApiUpdateGlossary = bool.Parse(configuration["translation:deepL:deepLApiUpdateGlossary"] ?? "false");
+            var deepLContextDefault = configuration["translation:deepL:deepLContext:default"];
+            var deepLContextActivation = configuration["translation:deepL:deepLContext:activation"];
             string deepLFormality = configuration["translation:deepL:deepLFormality"];
             string deepLApiMode = configuration["translation:deepL:deepLApiMode"];
 
@@ -42,7 +44,7 @@ namespace Valkyrie.AutoTranslator
 
             AutoTranslator autoTranslator = new AutoTranslator(
                 inputPath, inputFileName, outputPath, outputFileNameAdditionalPart, translate, targetLanguageName, sourceLanguageName, targetLanguage, sourceLanguage,
-                categoryId, azureAuth, deepLApiUpdateGlossary, deepLApiMode, useLlmApi, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepSeekApiKey, llmPrompt
+                categoryId, azureAuth, deepLApiUpdateGlossary, deepLApiMode, useLlmApi, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepLContextDefault, deepLContextActivation, deepSeekApiKey, llmPrompt
             );
             autoTranslator.CreateTranslatedFiles();
         }

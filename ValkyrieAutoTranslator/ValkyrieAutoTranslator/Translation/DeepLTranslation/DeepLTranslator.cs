@@ -7,7 +7,7 @@ namespace Valkyrie.AutoTranslator
     {
         internal const char SpecialGlossaryChar = '␣';
 
-        public static async Task<string> Translate(string deepLApiMode, string text, string sourceLang, string targetLang, string apiKey, string glossaryId = null, string deepLFormality = null)
+        public static async Task<string> Translate(string deepLApiMode,string key, string text, string sourceLang, string targetLang, string apiKey, string glossaryId = null, string deepLContextDefault = null, string deepLContextActivation = null, string deepLFormality = null)
         {
             using (var client = new HttpClient())
             {
@@ -26,6 +26,7 @@ namespace Valkyrie.AutoTranslator
                             new KeyValuePair<string, string>("target_lang", targetLang.ToUpper()),
                             new KeyValuePair<string, string>("tag_handling", "xml"),
                             new KeyValuePair<string, string>("ignore_tags", "keep"),
+                            new KeyValuePair<string, string>("model_type", "quality_optimized"),
                         };
                         if (!string.IsNullOrEmpty(glossaryId))
                         {
@@ -34,6 +35,15 @@ namespace Valkyrie.AutoTranslator
                         if (!string.IsNullOrEmpty(deepLFormality))
                         {
                             keyValuePairs.Add(new KeyValuePair<string, string>("formality", deepLFormality));
+                        }
+
+                        if (key.StartsWith("Activation") && !string.IsNullOrEmpty(deepLContextActivation))
+                        {
+                            keyValuePairs.Add(new KeyValuePair<string, string>("context", deepLContextActivation));
+                        }
+                        else if (!string.IsNullOrEmpty(deepLContextDefault))
+                        {
+                            keyValuePairs.Add(new KeyValuePair<string, string>("context", deepLContextDefault));
                         }
 
                         using (var content = new FormUrlEncodedContent(keyValuePairs))
@@ -47,12 +57,12 @@ namespace Valkyrie.AutoTranslator
                                 delayMs *= 2;
                                 continue;
                             }
-                            if((int)response.StatusCode == 456)
+                            if ((int)response.StatusCode == 456)
                             {
                                 string limitReachedError = "DeepL API limit reached.";
                                 AutoTranslatorLogger.Error(limitReachedError);
-								return text;
-							}
+                                return text;
+                            }
 
                             response.EnsureSuccessStatusCode();
                             if (!response.IsSuccessStatusCode)
@@ -61,7 +71,7 @@ namespace Valkyrie.AutoTranslator
                                 AutoTranslatorLogger.Error($"DeepL API error: {response.StatusCode} - {errorContent}");
                                 return text;
 
-							}
+                            }
                             response.EnsureSuccessStatusCode();
                             var json = await response.Content.ReadAsStringAsync();
                             var result = JObject.Parse(json);
