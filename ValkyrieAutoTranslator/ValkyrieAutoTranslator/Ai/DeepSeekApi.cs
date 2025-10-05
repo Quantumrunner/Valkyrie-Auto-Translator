@@ -8,7 +8,7 @@ namespace Valkyrie.AutoTranslator.Ai
         private const int MaxRetries = 3;
         private const int ThrottleDelayMs = 1000;
 
-        public static async Task<string> ExecutePromptAsync(string deepseekApiKey, string llmPrompt, string key, string value)
+        public static async Task<Tuple<string, bool>> ExecutePromptAsync(string deepseekApiKey, string llmPrompt, string key, string value)
         {
             using (var httpClient = new HttpClient())
             {
@@ -60,7 +60,8 @@ namespace Valkyrie.AutoTranslator.Ai
                                 response.EnsureSuccessStatusCode();
                                 string responseContent = await response.Content.ReadAsStringAsync();
                                 dynamic result = Newtonsoft.Json.JsonConvert.DeserializeObject(responseContent);
-                                return result?.choices?[0]?.message?.content?.ToString() ?? string.Empty;
+                                string resultString = result?.choices?[0]?.message?.content?.ToString() ?? string.Empty;
+                                return new Tuple<string, bool>(resultString, false);
                             }
                         }
                     }

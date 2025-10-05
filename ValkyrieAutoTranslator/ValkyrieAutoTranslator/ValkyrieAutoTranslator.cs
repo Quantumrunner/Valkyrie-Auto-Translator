@@ -196,7 +196,11 @@ namespace Valkyrie.AutoTranslator
             }
             GenerateTranslatedFile(list, _outputPath, inputFile, _outputFileNameAdditionalPart, _csvOutputFileDelimiter);
 
-            TranslationCacheHelper.SaveTranslationCache(csvTool, _translationCacheFilePath, cacheFileName, _csvOutputFileDelimiter, translationCache);
+            //Only save cache if any real changes were done
+            if (_translate || _useLlmApi)
+            {
+                TranslationCacheHelper.SaveTranslationCache(csvTool, _translationCacheFilePath, cacheFileName, _csvOutputFileDelimiter, translationCache);
+            }
 
             AutoTranslatorLogger.Info($"Finished translating file {inputFile}");
         }
@@ -337,6 +341,7 @@ namespace Valkyrie.AutoTranslator
             var curlyBracketWords = AutoTranslatorHelpers.IdentifyWordsInCurlyBrackets(value);
 
             string translatedValue = value;
+            bool errorOccurred = false;
 
             //use cached value if available
             if (translationCache.Any(c => c.Key.Equals(value, System.StringComparison.OrdinalIgnoreCase)))
@@ -356,7 +361,11 @@ namespace Valkyrie.AutoTranslator
                     if (_translatorProvider == TranslatorConstants.ApiNameDeepL)
                     {
                         AutoTranslatorLogger.Info($"Start using DeepL translator for sentence: {value}");
-                        translatedValue = DeepLTranslator.Translate(_deepLApiMode, key, value, _sourceLanguage, _targetLanguage, _deepLApiKey, _deepLGlossaryId, _deepLContextDefault, _deepLContextActivation, _deepLFormality).GetAwaiter().GetResult();
+                        var tuple = DeepLTranslator.Translate(_deepLApiMode, key, value, _sourceLanguage, _targetLanguage, _deepLApiKey, _deepLGlossaryId, _deepLContextDefault, _deepLContextActivation, _deepLFormality).GetAwaiter().GetResult();
+                        if (tuple.Item2) // if error occurred, use original text
+                        {
+                            errorOccurred = true;
+                        }
                         AutoTranslatorLogger.Success($"Finished using DeepL translator for sentence: {value}");
                     }
                     else
@@ -376,7 +385,12 @@ namespace Valkyrie.AutoTranslator
                 if (_useLlmApi && !isSingleWord)
                 {
                     AutoTranslatorLogger.Info($"Start using DeepSeek LLM for sentence: {translatedValue}");
-                    translatedValue = DeepSeekApi.ExecutePromptAsync(_deepSeekApiKey, _llmPrompt, key, translatedValue).GetAwaiter().GetResult();
+                    var llmResult =DeepSeekApi.ExecutePromptAsync(_deepSeekApiKey, _llmPrompt, key, translatedValue).GetAwaiter().GetResult();
+                    if(llmResult.Item2) // if error occurred, use original text
+                    {
+                            errorOccurred = true;
+                    }
+                    translatedValue = llmResult.Item1;
                     AutoTranslatorLogger.Success($"Finished using DeepSeek LLM for sentence: {value}");
                 }
                 else if (_useLlmApi && isSingleWord)
@@ -400,7 +414,10 @@ namespace Valkyrie.AutoTranslator
                 translatedValue = AutoTranslatorHelpers.ReplaceLineBreaksWithOldValue(translatedValue);
             }
 
-            translationCache.Add(new KeyValuePair<string, string>(valueBefore, translatedValue));
+            if (!errorOccurred)
+            {
+                translationCache.Add(new KeyValuePair<string, string>(valueBefore, translatedValue));
+            }
 
             AutoTranslatorLogger.Success($"Finished all operations for sentence: {value}");
             return translatedValue;

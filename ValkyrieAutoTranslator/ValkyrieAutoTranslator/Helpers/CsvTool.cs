@@ -102,7 +102,7 @@ namespace Valkyrie.AutoTranslator
             }
         }
 
-        public void CreateCsvFile(string outputPath, string filenameOld, string fileNameNewAdditionalPart, List<string> headers, List<ValkyrieLanguageData> data, bool quoteAllFields, string delimiter = null)
+        public void CreateCsvFile(string outputPath, string filenameOld, string fileNameNewAdditionalPart, ICollection<string> headers, ICollection<ValkyrieLanguageData> data, bool quoteAllFields, string delimiter = null)
         {
             if (string.IsNullOrWhiteSpace(delimiter))
             {

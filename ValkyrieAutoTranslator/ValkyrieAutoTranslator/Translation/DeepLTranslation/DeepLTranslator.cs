@@ -7,7 +7,7 @@ namespace Valkyrie.AutoTranslator
     {
         internal const char SpecialGlossaryChar = '␣';
 
-        public static async Task<string> Translate(string deepLApiMode,string key, string text, string sourceLang, string targetLang, string apiKey, string glossaryId = null, string deepLContextDefault = null, string deepLContextActivation = null, string deepLFormality = null)
+        public static async Task<Tuple<string, bool>> Translate(string deepLApiMode,string key, string text, string sourceLang, string targetLang, string apiKey, string glossaryId = null, string deepLContextDefault = null, string deepLContextActivation = null, string deepLFormality = null)
         {
             using (var client = new HttpClient())
             {
@@ -61,7 +61,7 @@ namespace Valkyrie.AutoTranslator
                             {
                                 string limitReachedError = "DeepL API limit reached.";
                                 AutoTranslatorLogger.Error(limitReachedError);
-                                return text;
+                                return new Tuple<string, bool>(text, true);
                             }
 
                             response.EnsureSuccessStatusCode();
@@ -69,25 +69,30 @@ namespace Valkyrie.AutoTranslator
                             {
                                 var errorContent = await response.Content.ReadAsStringAsync();
                                 AutoTranslatorLogger.Error($"DeepL API error: {response.StatusCode} - {errorContent}");
-                                return text;
+                                return new Tuple<string, bool>(text, true);
 
                             }
                             response.EnsureSuccessStatusCode();
                             var json = await response.Content.ReadAsStringAsync();
                             var result = JObject.Parse(json);
                             var translatedText = result["translations"]?[0]?["text"]?.ToString() ?? text;
-                            return translatedText;
+                            return new Tuple<string, bool>(text, false);
                         }
                     }
                     catch
                     {
-                        return text;
+                        if (attempt == maxRetries - 1)
+                        {
+                            throw;
+                        }
+                        await Task.Delay(delayMs);
+                        delayMs *= 2;
                     }
                 }
 
                 string errorMessage = $"DeepL API throttling: Max retry attempts exceeded for text {text}.";
 				AutoTranslatorLogger.Error(errorMessage);
-				throw new Exception(errorMessage);
+				return new Tuple<string, bool>(text, true);
             }
         }
 

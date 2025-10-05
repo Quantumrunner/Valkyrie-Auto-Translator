@@ -18,7 +18,7 @@ namespace Valkyrie.AutoTranslator.Helpers
                     {
                         AutoTranslatorLogger.Error($"Translation cache directory does not exist: {translationCacheFilePath}");
                         return translationCache;
-                    }                    
+                    }
 
                     string combinedPath = Path.Combine(translationCacheFilePath, translationCacheFileName);
                     if (!File.Exists(combinedPath))
@@ -64,7 +64,7 @@ namespace Valkyrie.AutoTranslator.Helpers
 
             try
             {
-                var data = new List<ValkyrieLanguageData>();
+                var data = new HashSet<ValkyrieLanguageData>();
                 foreach (var entry in translationCache)
                 {
                     if (!string.IsNullOrWhiteSpace(entry.Key) && !string.IsNullOrWhiteSpace(entry.Value))
@@ -73,7 +73,7 @@ namespace Valkyrie.AutoTranslator.Helpers
                     }
                 }
 
-                List<string> headers = new List<string> { "Key", "Value" };
+                HashSet<string> headers = new HashSet<string> { "Key", "Value" };
                 csvTool.CreateCsvFile(translationCacheFilePath, translationCacheFileName, string.Empty, headers, data, true, csvOutputFileDelimiter);
                 AutoTranslatorLogger.Info($"Saved {data.Count} entries to translation cache file: {translationCacheFilePath}");
             }
