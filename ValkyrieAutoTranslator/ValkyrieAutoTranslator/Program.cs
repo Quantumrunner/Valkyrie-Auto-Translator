@@ -34,6 +34,7 @@ namespace Valkyrie.AutoTranslator
             string llmPrompt = configuration["llm:llmPrompt"];
             bool useLlmApi = bool.Parse(configuration["llm:useLlmApi"] ?? "false");
 
+            bool useTranslationCache = bool.Parse(configuration["cache:useTranslationCache"] ?? "false");
             string translationCacheFilePath = configuration["cache:translationCacheFilePath"];
 
             string inputPath = configuration["fileInputOutput:inputPath"];
@@ -44,7 +45,7 @@ namespace Valkyrie.AutoTranslator
 
             AutoTranslator autoTranslator = new AutoTranslator(
                 inputPath, inputFileName, outputPath, outputFileNameAdditionalPart, translate, targetLanguageName, sourceLanguageName, targetLanguage, sourceLanguage,
-                categoryId, azureAuth, deepLApiUpdateGlossary, deepLApiMode, useLlmApi, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepLContextDefault, deepLContextActivation, deepSeekApiKey, llmPrompt
+                categoryId, azureAuth, deepLApiUpdateGlossary, deepLApiMode, useLlmApi, useTranslationCache, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepLContextDefault, deepLContextActivation, deepSeekApiKey, llmPrompt
             );
             autoTranslator.CreateTranslatedFiles();
         }

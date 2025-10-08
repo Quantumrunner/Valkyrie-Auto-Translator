@@ -31,6 +31,7 @@ namespace Valkyrie.AutoTranslator {
         private readonly bool _useLlmApi;
         private readonly string _glossaryFilePath;
         private readonly string _translationCacheFilePath;
+        private readonly bool _useTranslationCache;
         private TranslationCacheManager _translationCacheManager;
         private CsvTool csvTool;
 
@@ -49,6 +50,7 @@ namespace Valkyrie.AutoTranslator {
             bool deepLApiUpdateGlossary,
             string deepLApiMode,
             bool useLlmApi,
+            bool useTranslationCache,
             string outputDelimiter = null,
             string translatorProvider = TranslatorConstants.ApiNameAzure,
             string deepLApiKey = null,
@@ -83,6 +85,7 @@ namespace Valkyrie.AutoTranslator {
             _useLlmApi = useLlmApi;
             _glossaryFilePath = glossaryFilePath;
             _translationCacheFilePath = translationCacheFilePath;
+            _useTranslationCache = useTranslationCache;
 
             // Log all properties except for API keys
             AutoTranslatorLogger.Info ($"AutoTranslator initialized with:");
@@ -106,6 +109,11 @@ namespace Valkyrie.AutoTranslator {
             AutoTranslatorLogger.Info ($"Properties that will not be logged here=deepSeekApiKey, llmPrompt, deepLApiKey, deepLContextDefault, deepLContextActivation, azureKey");
 
             // Log all properties except for API keys
+            if(_useTranslationCache && translationCacheFilePath == null)
+            {
+                throw new ArgumentNullException("translationCacheFilePath", "Translation cache file path cannot be null. Please provide a valid path.");
+            }
+
             if (useLlmApi) {
                 if (string.IsNullOrEmpty (_deepSeekApiKey) || string.IsNullOrEmpty (_llmPrompt)) {
                     AutoTranslatorLogger.Error ("LLM API usage is enabled, but DeepSeekApiKey or LlmPrompt is null or empty. Please provide valid values.");
@@ -174,7 +182,7 @@ namespace Valkyrie.AutoTranslator {
             GenerateTranslatedFile (list, _outputPath, inputFile, _outputFileNameAdditionalPart, _csvOutputFileDelimiter);
 
             //Only save cache if any real changes were done
-            if (_translate || _useLlmApi) {
+            if (_useTranslationCache && (_translate || _useLlmApi)) {
                 _translationCacheManager.SaveCache();
             }
 
@@ -304,7 +312,7 @@ namespace Valkyrie.AutoTranslator {
             bool errorOccurred = false;
 
             //use cached value if available
-            if (_translationCacheManager.TryGetTranslation(value, out var cachedTranslation))
+            if (_useTranslationCache && _translationCacheManager.TryGetTranslation(value, out var cachedTranslation))
             {
                 translatedValue = cachedTranslation;
                 AutoTranslatorLogger.Info($"Using cached value for: {value}");

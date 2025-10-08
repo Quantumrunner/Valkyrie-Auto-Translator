@@ -34,7 +34,10 @@ namespace Valkyrie.AutoTranslator
 
         public bool TryGetTranslation(string value, out string translation)
         {
-            var cached = _cache.FirstOrDefault(c => c.Key.Equals(value, System.StringComparison.OrdinalIgnoreCase));
+            // Normalize both the input and cache keys for comparison
+            string normalizedValue = value?.Trim();
+            var cached = _cache.FirstOrDefault(c => 
+                string.Equals(c.Key?.Trim(), normalizedValue, System.StringComparison.OrdinalIgnoreCase));
             if (!string.IsNullOrEmpty(cached.Value))
             {
                 translation = cached.Value;
