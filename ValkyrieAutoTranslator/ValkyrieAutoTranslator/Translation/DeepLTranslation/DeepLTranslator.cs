@@ -70,13 +70,12 @@ namespace Valkyrie.AutoTranslator
                                 var errorContent = await response.Content.ReadAsStringAsync();
                                 AutoTranslatorLogger.Error($"DeepL API error: {response.StatusCode} - {errorContent}");
                                 return new Tuple<string, bool>(text, true);
-
                             }
                             response.EnsureSuccessStatusCode();
                             var json = await response.Content.ReadAsStringAsync();
                             var result = JObject.Parse(json);
                             var translatedText = result["translations"]?[0]?["text"]?.ToString() ?? text;
-                            return new Tuple<string, bool>(text, false);
+                            return new Tuple<string, bool>(translatedText, false);
                         }
                     }
                     catch
