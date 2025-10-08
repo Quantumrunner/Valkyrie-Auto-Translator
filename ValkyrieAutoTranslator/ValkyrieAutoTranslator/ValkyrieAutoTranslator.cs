@@ -1,5 +1,4 @@
 ﻿using Valkyrie.AutoTranslator.Ai;
-using Valkyrie.AutoTranslator.AzureTranslation;
 using Valkyrie.AutoTranslator.Data;
 using Valkyrie.AutoTranslator.Helpers;
 
@@ -45,8 +44,6 @@ namespace Valkyrie.AutoTranslator {
             string sourceLanguageName,
             string targetLanguage,
             string sourceLanguage,
-            string azureCategoryId,
-            string azureKey,
             bool deepLApiUpdateGlossary,
             string deepLApiMode,
             bool useLlmApi,
@@ -61,8 +58,6 @@ namespace Valkyrie.AutoTranslator {
             string deepLContextActivation = null,
             string deepSeekApiKey = null,
             string llmPrompt = null) {
-            _azureKey = azureKey;
-            _azureCategoryId = azureCategoryId;
             _targetLanguage = targetLanguage;
             _sourceLanguage = sourceLanguage;
             _targetLanguageName = targetLanguageName;
@@ -335,9 +330,7 @@ namespace Valkyrie.AutoTranslator {
                         }
                         AutoTranslatorLogger.Success ($"Finished using DeepL translator for sentence: {value}");
                     } else {
-                        AutoTranslatorLogger.Info ($"Start using Azure translator for sentence: {value}");
-                        translatedValue = AzureTranslator.Translate (value, _sourceLanguage, _targetLanguage, _azureKey, _azureCategoryId).GetAwaiter ().GetResult ();
-                        AutoTranslatorLogger.Success ($"Finished using Azure translator for {key}");
+                        AutoTranslatorLogger.Error("Only DeepL translator is supported at the moment.");
                     }
                 }
 

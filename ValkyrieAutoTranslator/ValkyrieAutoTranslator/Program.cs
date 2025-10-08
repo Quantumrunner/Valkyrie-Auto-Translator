@@ -13,7 +13,6 @@ namespace Valkyrie.AutoTranslator
                 .AddUserSecrets<Program>() // For sensitive data like API keys
                 .Build();
 
-            string azureAuth = configuration["secrets:azureAuthentificationKey"];
             string deepSeekApiKey = configuration["secrets:deepSeekApiKey"];
             string deepLApiKey = configuration["secrets:deepLApiKey"];
 
@@ -24,7 +23,6 @@ namespace Valkyrie.AutoTranslator
             string targetLanguageName = configuration["translation:targetLanguageName"];
             string targetLanguage = configuration["translation:targetLanguage"];
             string sourceLanguageName = configuration["translation:sourceLanguageName"];
-            string categoryId = configuration["translation:azure:azureCategoryId"];
             bool deepLApiUpdateGlossary = bool.Parse(configuration["translation:deepL:deepLApiUpdateGlossary"] ?? "false");
             var deepLContextDefault = configuration["translation:deepL:deepLContext:default"];
             var deepLContextActivation = configuration["translation:deepL:deepLContext:activation"];
@@ -45,7 +43,7 @@ namespace Valkyrie.AutoTranslator
 
             AutoTranslator autoTranslator = new AutoTranslator(
                 inputPath, inputFileName, outputPath, outputFileNameAdditionalPart, translate, targetLanguageName, sourceLanguageName, targetLanguage, sourceLanguage,
-                categoryId, azureAuth, deepLApiUpdateGlossary, deepLApiMode, useLlmApi, useTranslationCache, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepLContextDefault, deepLContextActivation, deepSeekApiKey, llmPrompt
+                deepLApiUpdateGlossary, deepLApiMode, useLlmApi, useTranslationCache, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepLContextDefault, deepLContextActivation, deepSeekApiKey, llmPrompt
             );
             autoTranslator.CreateTranslatedFiles();
         }

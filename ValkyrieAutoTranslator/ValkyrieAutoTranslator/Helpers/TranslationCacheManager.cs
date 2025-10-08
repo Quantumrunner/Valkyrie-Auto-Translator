@@ -1,4 +1,3 @@
-using Valkyrie.AutoTranslator.Data;
 using Valkyrie.AutoTranslator.Helpers;
 
 namespace Valkyrie.AutoTranslator
