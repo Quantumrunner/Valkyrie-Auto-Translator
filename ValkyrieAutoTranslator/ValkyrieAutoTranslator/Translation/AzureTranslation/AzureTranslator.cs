@@ -15,7 +15,7 @@ namespace Valkyrie.AutoTranslator.AzureTranslation
 
         private static string uri;
 
-        public static async Task<string> Translate(string text, HashSet<KeyValuePair<string, string>> translationCache, string sourceLanguage, string targetLanguage, string azureKey, string azureCategoryId)
+        public static async Task<string> Translate(string text, string sourceLanguage, string targetLanguage, string azureKey, string azureCategoryId)
         {
             queryparameter = string.Format(queryparameter, sourceLanguage, targetLanguage, azureCategoryId);
             uri = host + path + queryparameter;
@@ -45,7 +45,6 @@ namespace Valkyrie.AutoTranslator.AzureTranslation
                     }
                     AzureTranslationObject objData = JsonConvert.DeserializeObject<List<AzureTranslationObject>>(responseBody).FirstOrDefault();
                     string translatedText = objData.translations.FirstOrDefault().text;
-                    translationCache.Add(new KeyValuePair<string, string>(text, translatedText));
                     return translatedText;
                 }
             }

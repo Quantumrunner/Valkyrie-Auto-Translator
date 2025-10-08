@@ -31,7 +31,7 @@ namespace Valkyrie.AutoTranslator {
         private readonly bool _useLlmApi;
         private readonly string _glossaryFilePath;
         private readonly string _translationCacheFilePath;
-        private HashSet<KeyValuePair<string, string>> translationCache;
+        private TranslationCacheManager _translationCacheManager;
         private CsvTool csvTool;
 
         public AutoTranslator (
@@ -121,6 +121,13 @@ namespace Valkyrie.AutoTranslator {
 
             csvTool = new CsvTool (null, _csvOutputFileDelimiter);
 
+            _translationCacheManager = new TranslationCacheManager(
+                csvTool,
+                _translationCacheFilePath,
+                cacheFileName,
+                _csvOutputFileDelimiter
+            );
+
             // Update DeepL glossary if required
             if (_translate) {
                 if (_translatorProvider == TranslatorConstants.ApiNameDeepL) {
@@ -160,13 +167,6 @@ namespace Valkyrie.AutoTranslator {
             AutoTranslatorLogger.Info ($"Start translating file {inputFile}");
             List<ValkyrieLanguageData> languageData = csvTool.GetFileLanguageData (inputPath, inputFile, false);
 
-            if (!string.IsNullOrWhiteSpace (_translationCacheFilePath)) {
-                translationCache = TranslationCacheHelper.LoadTranslationCache (
-                    csvTool, _translationCacheFilePath, cacheFileName, _csvOutputFileDelimiter);
-            } else {
-                translationCache = new HashSet<KeyValuePair<string, string>> ();
-            }
-
             List<ValkyrieLanguageData> list = new List<ValkyrieLanguageData> ();
             foreach (ValkyrieLanguageData languageDataSingle in languageData) {
                 TranslateData (list, languageDataSingle);
@@ -175,7 +175,7 @@ namespace Valkyrie.AutoTranslator {
 
             //Only save cache if any real changes were done
             if (_translate || _useLlmApi) {
-                TranslationCacheHelper.SaveTranslationCache (csvTool, _translationCacheFilePath, cacheFileName, _csvOutputFileDelimiter, translationCache);
+                _translationCacheManager.SaveCache();
             }
 
             AutoTranslatorLogger.Info ($"Finished translating file {inputFile}");
@@ -304,9 +304,9 @@ namespace Valkyrie.AutoTranslator {
             bool errorOccurred = false;
 
             //use cached value if available
-            if (translationCache.Any(c => c.Key.Equals(value, System.StringComparison.OrdinalIgnoreCase)))
+            if (_translationCacheManager.TryGetTranslation(value, out var cachedTranslation))
             {
-                translatedValue = translationCache.FirstOrDefault(c => c.Key == value).Value;
+                translatedValue = cachedTranslation;
                 AutoTranslatorLogger.Info($"Using cached value for: {value}");
             }
             //if not cached, user the translator API
@@ -328,7 +328,7 @@ namespace Valkyrie.AutoTranslator {
                         AutoTranslatorLogger.Success ($"Finished using DeepL translator for sentence: {value}");
                     } else {
                         AutoTranslatorLogger.Info ($"Start using Azure translator for sentence: {value}");
-                        translatedValue = AzureTranslator.Translate (value, translationCache, _sourceLanguage, _targetLanguage, _azureKey, _azureCategoryId).GetAwaiter ().GetResult ();
+                        translatedValue = AzureTranslator.Translate (value, _sourceLanguage, _targetLanguage, _azureKey, _azureCategoryId).GetAwaiter ().GetResult ();
                         AutoTranslatorLogger.Success ($"Finished using Azure translator for {key}");
                     }
                 }
@@ -366,7 +366,7 @@ namespace Valkyrie.AutoTranslator {
             }
 
             if (!errorOccurred) {
-                translationCache.Add (new KeyValuePair<string, string> (valueBefore, translatedValue));
+                _translationCacheManager.AddTranslation(valueBefore, translatedValue);
             }
 
             AutoTranslatorLogger.Success ($"Finished all operations for sentence: {value}");
