@@ -38,11 +38,6 @@ namespace Valkyrie.AutoTranslator
                 value = AutoTranslatorHelpers.AddNoTranslationTag(value, wordWithBrackets, wordWithBrackets, ref replacedWords, translatorProvider);
             }
 
-            if (translatorProvider == TranslatorConstants.ApiNameAzure)
-            {
-                value = AutoTranslatorHelpers.ReplaceLineBreaksWithNoTranslationTag(value);
-            }
-
             return value;
         }
 
@@ -117,9 +112,6 @@ namespace Valkyrie.AutoTranslator
         {
             // Remove DeepL <keep> tags, restoring the original value inside (including quotes)
             value = Regex.Replace(value, @"<keep>(.*?)</keep>", "$1");
-
-            // Remove Azure <mstrans:dictionary> tags, restoring the original value inside
-            value = Regex.Replace(value, @"<mstrans:dictionary[^>]*>(.*?)</mstrans:dictionary>", "$1");
 
             return value;
         }

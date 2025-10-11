@@ -17,8 +17,6 @@ namespace Valkyrie.AutoTranslator
         private readonly string _sourceLanguageName;
         private readonly string _inputPath;
         private readonly string _targetLanguageName;
-        private readonly string _azureCategoryId;
-        private readonly string _azureKey;
         private readonly string _sourceLanguage;
         private readonly string _translatorProvider;
         private readonly string _deepLApiKey;
@@ -55,7 +53,7 @@ namespace Valkyrie.AutoTranslator
             bool useLlmApi,
             bool useTranslationCache,
             string outputDelimiter = null,
-            string translatorProvider = TranslatorConstants.ApiNameAzure,
+            string translatorProvider = TranslatorConstants.ApiNameDeepL,
             string deepLApiKey = null,
             string glossaryFilePath = null,
             string translationCacheFilePath = null,
@@ -98,7 +96,6 @@ namespace Valkyrie.AutoTranslator
 
             // Log all properties except for API keys
             AutoTranslatorLogger.Info($"AutoTranslator initialized with:");
-            AutoTranslatorLogger.Info($"azureCategoryId={_azureCategoryId}");
             AutoTranslatorLogger.Info($"deepLApiUpdateGlossary={_deepLApiUpdateGlossary}");
             AutoTranslatorLogger.Info($"deepLFormality={_deepLFormality} (possible values are: leave this empty or \"more\" or \"less\" or \"prefer_more\" or \"prefer_less\")");
             AutoTranslatorLogger.Info($"glossaryFilePath={_glossaryFilePath}");
@@ -115,7 +112,7 @@ namespace Valkyrie.AutoTranslator
             AutoTranslatorLogger.Info($"translatorProvider={_translatorProvider}");
             AutoTranslatorLogger.Info($"useLlmApi={_useLlmApi}");
 
-            AutoTranslatorLogger.Info($"Properties that will not be logged here=deepSeekApiKey, llmPrompt, deepLApiKey, deepLContextDefault, deepLContextActivation, azureKey");
+            AutoTranslatorLogger.Info($"Properties that will not be logged here=deepSeekApiKey, llmPrompt, deepLApiKey, deepLContextDefault, deepLContextActivation");
 
             // Log all properties except for API keys
             if (_useTranslationCache && translationCacheFilePath == null)
