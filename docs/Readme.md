@@ -133,7 +133,7 @@ Example appsettings.json for Enhancement Mode:
 # Cache
 The application uses a local file-based cache to store translations and avoid re-translating the same text, which saves API costs and speeds up subsequent runs.
 
-Optionally the cache can be added to the DeeL glossary by setting the following parameter:
+Optionally the cache can be added to the DeepL glossary by setting the following parameter:
 ```json:
 "cache": {
   "addCacheToDictionary": "true",  
