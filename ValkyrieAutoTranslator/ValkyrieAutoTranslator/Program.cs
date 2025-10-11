@@ -7,43 +7,48 @@ namespace Valkyrie.AutoTranslator
         static void Main(string[] args)
         {
             // Build configuration from appsettings.json
-            var configuration = new ConfigurationBuilder()
+            var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddUserSecrets<Program>() // For sensitive data like API keys
+                .AddJsonFile("appsettings.json")
+                .AddUserSecrets<Program>(optional: true)
                 .Build();
 
-            string deepSeekApiKey = configuration["secrets:deepSeekApiKey"];
-            string deepLApiKey = configuration["secrets:deepLApiKey"];
+            string deepSeekApiKey = config["secrets:deepSeekApiKey"];
+            string deepLApiKey = config["secrets:deepLApiKey"];
 
-            bool translate = bool.Parse(configuration["translation:translate"] ?? "false");
-            string translationProvider = configuration["translation:translatorProvider"];
-            string deepLGlossaryFilePath = configuration["translation:deepL:deepLGlossaryFilePath"];
-            string sourceLanguage = configuration["translation:sourceLanguage"];
-            string targetLanguageName = configuration["translation:targetLanguageName"];
-            string targetLanguage = configuration["translation:targetLanguage"];
-            string sourceLanguageName = configuration["translation:sourceLanguageName"];
-            bool deepLApiUpdateGlossary = bool.Parse(configuration["translation:deepL:deepLApiUpdateGlossary"] ?? "false");
-            var deepLContextDefault = configuration["translation:deepL:deepLContext:default"];
-            var deepLContextActivation = configuration["translation:deepL:deepLContext:activation"];
-            string deepLFormality = configuration["translation:deepL:deepLFormality"];
-            string deepLApiMode = configuration["translation:deepL:deepLApiMode"];
+            bool translate = bool.Parse(config["translation:translate"] ?? "false");
+            string translationProvider = config["translation:translatorProvider"];
+            string deepLGlossaryFilePath = config["translation:deepL:deepLGlossaryFilePath"];
+            string sourceLanguage = config["translation:sourceLanguage"];
+            string targetLanguageName = config["translation:targetLanguageName"];
+            string targetLanguage = config["translation:targetLanguage"];
+            string sourceLanguageName = config["translation:sourceLanguageName"];
+            bool deepLApiUpdateGlossary = bool.Parse(config["translation:deepL:deepLApiUpdateGlossary"] ?? "false");
+            var deepLContextDefault = config["translation:deepL:deepLContext:default"];
+            var deepLContextActivation = config["translation:deepL:deepLContext:activation"];
+            string deepLFormality = config["translation:deepL:deepLFormality"];
+            string deepLApiMode = config["translation:deepL:deepLApiMode"];
 
-            string llmPrompt = configuration["llm:llmPrompt"];
-            bool useLlmApi = bool.Parse(configuration["llm:useLlmApi"] ?? "false");
+            string llmPrompt = config["llm:llmPrompt"];
+            var llmKeyWords = config.GetSection("llm:llmKeyWords").Get<string[]>()?.ToList() ?? new List<string>();
+            var llmKeyWordsDefault = config.GetSection("llm:llmKeyWordsDefault").Get<string[]>()?.ToList() ?? new List<string>();
+            var llmKeyWordsActivation = config.GetSection("llm:llmKeyWordsActivation").Get<string[]>()?.ToList() ?? new List<string>();
+            bool useLlmApi = bool.Parse(config["llm:useLlmApi"] ?? "false");
 
-            bool useTranslationCache = bool.Parse(configuration["cache:useTranslationCache"] ?? "false");
-            string translationCacheFilePath = configuration["cache:translationCacheFilePath"];
+            bool useTranslationCache = bool.Parse(config["cache:useTranslationCache"] ?? "false");
+            string translationCacheFilePath = config["cache:translationCacheFilePath"];
 
-            string inputPath = configuration["fileInputOutput:inputPath"];
-            string inputFileName = configuration["fileInputOutput:inputFileName"];
-            string outputPath = configuration["fileInputOutput:outputPath"];
-            string outputFileNameAdditionalPart = configuration["fileInputOutput:outputFileNameAdditionalPart"];
-            string csvOutputFileDelimiter = configuration["fileInputOutput:csvOutputFileDelimiter"];
+            string inputPath = config["fileInputOutput:inputPath"];
+            string inputFileName = config["fileInputOutput:inputFileName"];
+            string outputPath = config["fileInputOutput:outputPath"];
+            string outputFileNameAdditionalPart = config["fileInputOutput:outputFileNameAdditionalPart"];
+            string csvOutputFileDelimiter = config["fileInputOutput:csvOutputFileDelimiter"];
+
+            bool addCacheToDictionary = bool.Parse(config["cache:addCacheToDictionary"] ?? "false");
 
             AutoTranslator autoTranslator = new AutoTranslator(
                 inputPath, inputFileName, outputPath, outputFileNameAdditionalPart, translate, targetLanguageName, sourceLanguageName, targetLanguage, sourceLanguage,
-                deepLApiUpdateGlossary, deepLApiMode, useLlmApi, useTranslationCache, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepLContextDefault, deepLContextActivation, deepSeekApiKey, llmPrompt
+                deepLApiUpdateGlossary, deepLApiMode, useLlmApi, useTranslationCache, csvOutputFileDelimiter, translationProvider, deepLApiKey, deepLGlossaryFilePath, translationCacheFilePath, deepLFormality, deepLContextDefault, deepLContextActivation, deepSeekApiKey, llmPrompt, llmKeyWordsDefault, llmKeyWordsActivation, addCacheToDictionary
             );
             autoTranslator.CreateTranslatedFiles();
         }

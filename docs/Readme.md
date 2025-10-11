@@ -15,7 +15,7 @@ For detailed information on configuring the application, please refer to appsett
 
 # Run modes
 You can run the application with different run modes:
-1. You can decide if you want to use AI translation features (Azure or DeepL => useLlmApi = true).
+1. You can decide if you want to use AI translation features (DeepL => useLlmApi = true).
 2. Optionally you can run additional AI large language model logic (e.g. DeepSeck, useLlmApi = true).
 3. Even when both modes are set to false you can run a dry run that will apply fixes to the localization file:
    1. Replace double quotes with correct quotes of the target language (e.g. "Quote text" becomes „Quote text“ in german).
@@ -100,51 +100,6 @@ To enable the glossary feature, configure the following in `appsettings.json`:
 }
 ```
 
-# Azure API Integration
-
-The application can use Microsoft's Azure Translator service for its translation needs. You can use [custom translation models](https://learn.microsoft.com/bg-bg/azure/ai-services/Translator/custom-translator/how-to/translate-with-custom-model) by specifying `azureCategoryId`.
-
-  ```json
-    "secrets": {
-          "azureAuthentificationKey": "YOUR_API_KEY"
-      },
-    "translation": {
-      "translatorProvider": "Azure",
-      "azure": {
-        "azureCategoryId": "YOUR_CUSTOM_MODEL_ID"
-      }
-    }
-  ```
-
-## Configuration
-
-To use the Azure Translator API, you need to configure the following settings in your `appsettings.json` file:
-
-1.  **Set the Translator Provider**:
-    *   Ensure `"translatorProvider"` is set to `"Azure"`.
-
-2.  **Provide your API Key**:
-    *   Place your Azure Translator resource key in the `"azureAuthentificationKey"` field within the `"secrets"` section.
-
-3.  **(Optional) Use a Custom Translation Model**:
-    *   If you have a custom translation model trained with Custom Translator, you can specify its Category ID in the `"azureCategoryId"` field. This ID tells Azure to use your specific model instead of the general-purpose one.
-    *   If you leave this field empty, the standard, general-purpose translation model will be used.
-
-**Example `appsettings.json` configuration:**
-
-```json
-"translation": {
-  "translate": "true",
-  "translatorProvider": "Azure",
-  "azure": {
-    "azureCategoryId": "YOUR_CUSTOM_MODEL_ID"
-  }
-},
-"secrets": {
-    "azureAuthentificationKey": "YOUR_AZURE_TRANSLATOR_KEY"
-}
-```
-
 # DeepSeck API Integration
 The application can leverage the DeepSeek API to use a Large Language Model (LLM) for text generation and refinement. This can be used to improve the quality of translations or even act as the sole translation engine.
 
@@ -152,7 +107,7 @@ The application can leverage the DeepSeek API to use a Large Language Model (LLM
 The DeepSeek integration is controlled by the `useLlmApi` setting. It can operate in two modes depending on the translate setting:
 
 ### Enhancement Mode (translate: true, useLlmApi: true):
-First, the text is translated by the primary translation provider (DeepL or Azure). Then, the translated text is passed to the DeepSeek API along with a custom prompt (llmPrompt). The LLM refines the translation, which can improve fluency, tone, and context.
+First, the text is translated by the primary translation provider (currently only DeepL). Then, the translated text is passed to the DeepSeek API along with a custom prompt (llmPrompt). The LLM refines the translation, which can improve fluency, tone, and context.
 
 ###  Standalone Mode (translate: false, useLlmApi: true):
 The primary translation provider is skipped. The original source text is sent directly to the DeepSeek API with your custom prompt. In this mode, your prompt must instruct the LLM to perform the translation (e.g., "Translate the following English text to German...").
@@ -178,11 +133,18 @@ Example appsettings.json for Enhancement Mode:
 # Cache
 The application uses a local file-based cache to store translations and avoid re-translating the same text, which saves API costs and speeds up subsequent runs.
 
+Optionally the cache can be added to the DeeL glossary by setting the following parameter:
+```json:
+"cache": {
+  "addCacheToDictionary": "true",  
+}
+```
+
 ## How it Works
 1.  **Configuration**: Caching is enabled by providing a path in the `translationCacheFilePath` setting in `appsettings.json`. If the path is empty, caching is disabled.
 2.  **Cache File**: A file named `ValkyrieTranslationCache.csv` is created in the specified directory. This file stores key-value pairs, where the `Key` is the original source text and the `Value` is the translated text.
 3.  **Process**:
     - Before translating a line of text, the application checks if the source text exists as a `Key` in the cache file.
     - **Cache Hit**: If the text is found, the corresponding translated `Value` is used directly, and the API call is skipped.
-    - **Cache Miss**: If the text is not found, it is translated via the configured API (DeepL/Azure). The new translation pair (original text and translated text) is then added to the cache.
+    - **Cache Miss**: If the text is not found, it is translated via the configured API (DeepL). The new translation pair (original text and translated text) is then added to the cache.
 4.  **Saving**: At the end of the run, the in-memory cache (including any new translations) is written back to the `ValkyrieTranslationCache.csv` file, making it available for future runs.

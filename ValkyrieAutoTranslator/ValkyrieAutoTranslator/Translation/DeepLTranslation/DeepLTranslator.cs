@@ -114,10 +114,10 @@ namespace Valkyrie.AutoTranslator
             AutoTranslatorLogger.Info($"Starting DeepL glossary update with glossary of {glossaryCount} entries");
 
             // Encode whitespace in keys and values
-            var encodedEntries = glossaryEntries.ConvertAll(e =>
+            var encodedEntries = glossaryEntries.Select(e =>
                 new KeyValuePair<string, string>(EncodeWhitespace(e.Key), EncodeWhitespace(e.Value))
-            );
-            var glossaryText = string.Join("\n", encodedEntries.ConvertAll(e => $"{e.Key}\t{e.Value}"));
+            ).ToList();
+            var glossaryText = string.Join("\n", encodedEntries.Select(e => $"{e.Key}\t{e.Value}"));
 
             using (var client = new HttpClient())
             {

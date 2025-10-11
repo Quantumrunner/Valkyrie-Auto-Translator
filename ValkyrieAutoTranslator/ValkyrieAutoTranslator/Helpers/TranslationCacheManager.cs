@@ -55,5 +55,10 @@ namespace Valkyrie.AutoTranslator
         {
             TranslationCacheHelper.SaveTranslationCache(_csvTool, _cacheFilePath, _cacheFileName, _delimiter, _cache);
         }
+
+        public IEnumerable<KeyValuePair<string, string>> GetAllTranslations()
+        {
+            return _cache;
+        }
     }
 }

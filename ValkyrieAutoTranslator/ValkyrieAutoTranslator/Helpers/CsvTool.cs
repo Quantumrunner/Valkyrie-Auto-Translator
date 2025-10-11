@@ -142,7 +142,7 @@ namespace Valkyrie.AutoTranslator
             }
         }
 
-        internal List<KeyValuePair<string, string>> GetLanguagePairSourceAndTragetLanguage(string glossaryFilePath, string sourceLanguageName, string targetLanguageName)
+        internal List<KeyValuePair<string, string>> GetLanguagePairSourceAndTargetLanguage(string glossaryFilePath, string sourceLanguageName, string targetLanguageName)
         {
             var result = new List<KeyValuePair<string, string>>();
 
