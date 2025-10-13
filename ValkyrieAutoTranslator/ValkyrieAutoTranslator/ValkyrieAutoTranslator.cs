@@ -65,9 +65,9 @@ namespace Valkyrie.AutoTranslator
             AutoTranslatorLogger.Info($"translationCacheFilePath={_config.Cache.TranslationCacheFilePath}");
             AutoTranslatorLogger.Info($"outputDelimiter={_config.FileInputOutput.CsvOutputFileDelimiter}");
             AutoTranslatorLogger.Info($"outputPath={_config.FileInputOutput.OutputPath}");
-            AutoTranslatorLogger.Info($"sourceLanguage={_config.Translation.SourceLanguage} (find supported values here: https://developers.deepl.com/docs/getting-started/supported-languages#translation-target-languages)");
+            AutoTranslatorLogger.Info($"sourceLanguage={_config.Translation.SourceLanguage}");
             AutoTranslatorLogger.Info($"sourceLanguageName={_config.Translation.SourceLanguageName}");
-            AutoTranslatorLogger.Info($"targetLanguage={_config.Translation.TargetLanguage} (find supported values here: https://developers.deepl.com/docs/getting-started/supported-languages#translation-target-languages)");
+            AutoTranslatorLogger.Info($"targetLanguage={_config.Translation.TargetLanguage}");
             AutoTranslatorLogger.Info($"targetLanguageName={_config.Translation.TargetLanguageName}");
             AutoTranslatorLogger.Info($"translate={_config.Translation.Translate}");
             AutoTranslatorLogger.Info($"translatorProvider={_config.Translation.TranslatorProvider}");
