@@ -108,7 +108,7 @@ namespace Valkyrie.AutoTranslator
             return encoded;
         }
 
-        public static async Task<string> UpdateGlossaryAsync(string apiKey, string sourceLang, string targetLang, List<KeyValuePair<string, string>> glossaryEntries)
+        public static async Task<string> UpdateGlossaryAsync(string apiKey, bool deleteExistingGlossaries, string sourceLang, string targetLang, List<KeyValuePair<string, string>> glossaryEntries)
         {
             int glossaryCount = glossaryEntries.Count;
             AutoTranslatorLogger.Info($"Starting DeepL glossary update with glossary of {glossaryCount} entries");

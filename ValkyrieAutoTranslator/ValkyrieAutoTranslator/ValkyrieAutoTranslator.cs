@@ -1,182 +1,121 @@
 ﻿using Valkyrie.AutoTranslator.Ai;
 using Valkyrie.AutoTranslator.Data;
 using Valkyrie.AutoTranslator.Helpers;
-using Microsoft.Extensions.Configuration;
+using ValkyrieAutoTranslator.Data;
 
 namespace Valkyrie.AutoTranslator
 {
     internal class AutoTranslator
     {
         private const string cacheFileName = "ValkyrieTranslationCache.csv";
-        private readonly string _inputFileName;
-        private readonly string _outputPath;
-        private readonly string _outputFileNameAdditionalPart;
-        private readonly bool _translate;
-        private readonly string _csvOutputFileDelimiter;
-        private readonly string _targetLanguage;
-        private readonly string _sourceLanguageName;
-        private readonly string _inputPath;
-        private readonly string _targetLanguageName;
-        private readonly string _sourceLanguage;
-        private readonly string _translatorProvider;
-        private readonly string _deepLApiKey;
-        private readonly string _deepLGlossaryId;
-        private readonly string _deepLFormality;
-        private readonly string _deepLContextDefault;
-        private readonly string _deepLContextActivation;
-        private readonly string _deepLApiMode;
-        private readonly string _deepSeekApiKey;
-        private readonly string _llmPrompt;
-        private readonly bool _deepLApiUpdateGlossary;
-        private readonly bool _useLlmApi;
-        private readonly string _glossaryFilePath;
-        private readonly string _translationCacheFilePath;
-        private readonly bool _useTranslationCache;
-        private readonly bool _addCacheToDictionary;
+        private readonly AutoTranslatorConfig _config;
+        private string _deepLGlossaryId;
         private TranslationCacheManager _translationCacheManager;
         private CsvTool csvTool;
-        private readonly List<string> _llmKeyWordsDefault;
-        private readonly List<string> _llmKeyWordsActivation;
 
-        public AutoTranslator(
-            string inputPath,
-            string inputFileName,
-            string outputPath,
-            string outputFileNameAdditionalPart,
-            bool translate,
-            string targetLanguageName,
-            string sourceLanguageName,
-            string targetLanguage,
-            string sourceLanguage,
-            bool deepLApiUpdateGlossary,
-            string deepLApiMode,
-            bool useLlmApi,
-            bool useTranslationCache,
-            string outputDelimiter = null,
-            string translatorProvider = TranslatorConstants.ApiNameDeepL,
-            string deepLApiKey = null,
-            string glossaryFilePath = null,
-            string translationCacheFilePath = null,
-            string deepLFormality = null,
-            string deepLContextDefault = null,
-            string deepLContextActivation = null,
-            string deepSeekApiKey = null,
-            string llmPrompt = null,
-            List<string> llmKeyWordsDefault = null,
-            List<string> llmKeyWordsActivation = null,
-            bool addCacheToDictionary = false
-        )
+        public AutoTranslator(AutoTranslatorConfig config)
         {
-            _targetLanguage = targetLanguage;
-            _sourceLanguage = sourceLanguage;
-            _targetLanguageName = targetLanguageName;
-            _sourceLanguageName = sourceLanguageName;
-            _inputPath = inputPath;
-            _inputFileName = inputFileName;
-            _outputPath = outputPath;
-            _outputFileNameAdditionalPart = outputFileNameAdditionalPart;
-            _translate = translate;
-            _csvOutputFileDelimiter = outputDelimiter;
-            _translatorProvider = translatorProvider;
-            _deepLApiKey = deepLApiKey;
-            _deepLFormality = deepLFormality;
-            _deepSeekApiKey = deepSeekApiKey;
-            _deepLApiMode = deepLApiMode;
-            _deepLContextDefault = deepLContextDefault;
-            _deepLContextActivation = deepLContextActivation;
-            _llmPrompt = llmPrompt;
-            _deepLApiUpdateGlossary = deepLApiUpdateGlossary;
-            _useLlmApi = useLlmApi;
-            _glossaryFilePath = glossaryFilePath;
-            _translationCacheFilePath = translationCacheFilePath;
-            _useTranslationCache = useTranslationCache;
-            _addCacheToDictionary = addCacheToDictionary;
-            _llmKeyWordsDefault = llmKeyWordsDefault ?? new List<string>();
-            _llmKeyWordsActivation = llmKeyWordsActivation ?? new List<string>();
+            _config = config;
 
-            // Log all properties except for API keys
-            AutoTranslatorLogger.Info($"AutoTranslator initialized with:");
-            AutoTranslatorLogger.Info($"deepLApiUpdateGlossary={_deepLApiUpdateGlossary}");
-            AutoTranslatorLogger.Info($"deepLFormality={_deepLFormality} (possible values are: leave this empty or \"more\" or \"less\" or \"prefer_more\" or \"prefer_less\")");
-            AutoTranslatorLogger.Info($"glossaryFilePath={_glossaryFilePath}");
-            AutoTranslatorLogger.Info($"inputPath={inputPath}");
-            AutoTranslatorLogger.Info($"inputFileName={inputFileName}");
-            AutoTranslatorLogger.Info($"translationCacheFilePath={translationCacheFilePath}");
-            AutoTranslatorLogger.Info($"outputDelimiter={_csvOutputFileDelimiter}");
-            AutoTranslatorLogger.Info($"outputPath={_outputPath}");
-            AutoTranslatorLogger.Info($"sourceLanguage={_sourceLanguage} (find supported values here: https://developers.deepl.com/docs/getting-started/supported-languages#translation-target-languages)");
-            AutoTranslatorLogger.Info($"sourceLanguageName={_sourceLanguageName}");
-            AutoTranslatorLogger.Info($"targetLanguage={_targetLanguage} (find supported values here: https://developers.deepl.com/docs/getting-started/supported-languages#translation-target-languages)");
-            AutoTranslatorLogger.Info($"targetLanguageName={_targetLanguageName}");
-            AutoTranslatorLogger.Info($"translate={_translate}");
-            AutoTranslatorLogger.Info($"translatorProvider={_translatorProvider}");
-            AutoTranslatorLogger.Info($"useLlmApi={_useLlmApi}");
+            LogPropertiesExceptSecrets();
+            ValidateConfiguration();
 
-            AutoTranslatorLogger.Info($"Properties that will not be logged here=deepSeekApiKey, llmPrompt, deepLApiKey, deepLContextDefault, deepLContextActivation");
-
-            // Log all properties except for API keys
-            if (_useTranslationCache && translationCacheFilePath == null)
-            {
-                throw new ArgumentNullException("translationCacheFilePath", "Translation cache file path cannot be null. Please provide a valid path.");
-            }
-
-            if (useLlmApi)
-            {
-                if (string.IsNullOrEmpty(_deepSeekApiKey) || string.IsNullOrEmpty(_llmPrompt))
-                {
-                    AutoTranslatorLogger.Error("LLM API usage is enabled, but DeepSeekApiKey or LlmPrompt is null or empty. Please provide valid values.");
-                    throw new System.Exception("LLM API usage is enabled, but DeepSeekApiKey or LlmPrompt is null or empty. Please provide valid values.");
-                }
-            }
-            if (translate)
-            {
-                if (string.IsNullOrEmpty(_deepLApiKey))
-                {
-                    AutoTranslatorLogger.Error("Translation is enabled, but DeepLApiKey is null or empty. Please provide a valid DeepL API key.");
-                    throw new System.Exception("Translation is enabled, but DeepLApiKey is null or empty. Please provide a valid DeepL API key.");
-                }
-            }
-
-            csvTool = new CsvTool(null, _csvOutputFileDelimiter);
+            csvTool = new CsvTool(null, _config.FileInputOutput.CsvOutputFileDelimiter);
 
             _translationCacheManager = new TranslationCacheManager(
                 csvTool,
-                _translationCacheFilePath,
+                _config.Cache.TranslationCacheFilePath,
                 cacheFileName,
-                _csvOutputFileDelimiter
+                _config.FileInputOutput.CsvOutputFileDelimiter
             );
 
-            // Update DeepL glossary if required
             string glossaryIdValue = string.Empty;
             glossaryIdValue = CreateDeepLGlossary(glossaryIdValue);
             _deepLGlossaryId = glossaryIdValue;
         }
 
+        private void ValidateConfiguration()
+        {
+            if (_config.Llm.UseLlmApi)
+            {
+                if (string.IsNullOrEmpty(_config.Secrets.DeepSeekApiKey) || string.IsNullOrEmpty(_config.Llm.LlmPrompt))
+                {
+                    AutoTranslatorLogger.Error("LLM API usage is enabled, but DeepSeekApiKey or LlmPrompt is null or empty. Please provide valid values.");
+                    throw new System.Exception("LLM API usage is enabled, but DeepSeekApiKey or LlmPrompt is null or empty. Please provide valid values.");
+                }
+            }
+            if (_config.Translation.Translate)
+            {
+                if (string.IsNullOrEmpty(_config.Secrets.DeepLApiKey))
+                {
+                    AutoTranslatorLogger.Error("Translation is enabled, but DeepLApiKey is null or empty. Please provide a valid DeepL API key.");
+                    throw new System.Exception("Translation is enabled, but DeepLApiKey is null or empty. Please provide a valid DeepL API key.");
+                }
+            }
+        }
+
+        private void LogPropertiesExceptSecrets()
+        {
+            AutoTranslatorLogger.Info($"AutoTranslator initialized with:");
+            AutoTranslatorLogger.Info($"deepLApiUpdateGlossary={_config.Translation.DeepL.DeepLApiUpdateGlossary}");
+            AutoTranslatorLogger.Info($"deepLFormality={_config.Translation.DeepL.DeepLFormality}");
+            AutoTranslatorLogger.Info($"glossaryFilePath={_config.Translation.DeepL.DeepLGlossaryFilePath}");
+            AutoTranslatorLogger.Info($"inputPath={_config.FileInputOutput.InputPath}");
+            AutoTranslatorLogger.Info($"inputFileName={_config.FileInputOutput.InputFileName}");
+            AutoTranslatorLogger.Info($"translationCacheFilePath={_config.Cache.TranslationCacheFilePath}");
+            AutoTranslatorLogger.Info($"outputDelimiter={_config.FileInputOutput.CsvOutputFileDelimiter}");
+            AutoTranslatorLogger.Info($"outputPath={_config.FileInputOutput.OutputPath}");
+            AutoTranslatorLogger.Info($"sourceLanguage={_config.Translation.SourceLanguage} (find supported values here: https://developers.deepl.com/docs/getting-started/supported-languages#translation-target-languages)");
+            AutoTranslatorLogger.Info($"sourceLanguageName={_config.Translation.SourceLanguageName}");
+            AutoTranslatorLogger.Info($"targetLanguage={_config.Translation.TargetLanguage} (find supported values here: https://developers.deepl.com/docs/getting-started/supported-languages#translation-target-languages)");
+            AutoTranslatorLogger.Info($"targetLanguageName={_config.Translation.TargetLanguageName}");
+            AutoTranslatorLogger.Info($"translate={_config.Translation.Translate}");
+            AutoTranslatorLogger.Info($"translatorProvider={_config.Translation.TranslatorProvider}");
+            AutoTranslatorLogger.Info($"useLlmApi={_config.Llm.UseLlmApi}");
+
+            AutoTranslatorLogger.Info($"Properties that will not be logged here=deepSeekApiKey, llmPrompt, deepLApiKey, deepLContextDefault, deepLContextActivation");
+
+            if (_config.Cache.UseTranslationCache && _config.Cache.TranslationCacheFilePath == null)
+            {
+                throw new ArgumentNullException("translationCacheFilePath", "Translation cache file path cannot be null. Please provide a valid path.");
+            }
+        }
+
         private string CreateDeepLGlossary(string glossaryIdValue)
         {
-            if (_translate)
+            if (_config.Translation.Translate)
             {
-                if (_translatorProvider == TranslatorConstants.ApiNameDeepL)
+                if (_config.Translation.TranslatorProvider == TranslatorConstants.ApiNameDeepL)
                 {
-                    if (_deepLApiUpdateGlossary)
+                    if (_config.Translation.DeepL.DeepLApiUpdateGlossary)
                     {
                         List<KeyValuePair<string, string>> glossaryEntries = new List<KeyValuePair<string, string>>();
-                        if (_glossaryFilePath != null)
+                        if (_config.Translation.DeepL.DeepLGlossaryFilePath != null)
                         {
-                            glossaryEntries = csvTool.GetLanguagePairSourceAndTargetLanguage(_glossaryFilePath, _sourceLanguageName, _targetLanguageName);
+                            glossaryEntries = csvTool.GetLanguagePairSourceAndTargetLanguage(
+                                _config.Translation.DeepL.DeepLGlossaryFilePath,
+                                _config.Translation.SourceLanguageName,
+                                _config.Translation.TargetLanguageName
+                            );
                         }
 
                         // Only add cache if the flag is true
-                        if (_addCacheToDictionary)
+                        if (_config.Cache.AddCacheToDictionary)
                         {
                             AddTranslationCacheToGlossary(glossaryEntries);
                         }
 
-                        glossaryIdValue = DeepLTranslator.UpdateGlossaryAsync(_deepLApiKey, _sourceLanguage, _targetLanguage, glossaryEntries).GetAwaiter().GetResult();
+                        glossaryIdValue = DeepLTranslator.UpdateGlossaryAsync(
+                            _config.Secrets.DeepLApiKey,
+                            _config.Translation.DeepL.DeleteExistingGlossaries,
+                            _config.Translation.SourceLanguage,
+                            _config.Translation.TargetLanguage,
+                            glossaryEntries
+                        ).GetAwaiter().GetResult();
                     }
                     else
                     {
-                        glossaryIdValue = DeepLTranslator.GetGlossary(_deepLApiKey).GetAwaiter().GetResult();
+                        glossaryIdValue = DeepLTranslator.GetGlossary(_config.Secrets.DeepLApiKey).GetAwaiter().GetResult();
                     }
                 }
             }
@@ -188,7 +127,7 @@ namespace Valkyrie.AutoTranslator
         {
             AutoTranslatorLogger.Info("Adding translation cache entries to glossary.");
             // Add entries from translation cache if not already present in glossary
-            if (_useTranslationCache && _translationCacheManager != null)
+            if (_config.Cache.UseTranslationCache && _translationCacheManager != null)
             {
                 var cacheEntries = _translationCacheManager.GetAllTranslations();
                 var glossarySet = new List<KeyValuePair<string, string>>(glossaryEntries);
@@ -205,25 +144,26 @@ namespace Valkyrie.AutoTranslator
 
         public void CreateTranslatedFiles()
         {
-            if (_inputFileName.StartsWith("*"))
+            if (_config.FileInputOutput.InputFileName.StartsWith("*"))
             {
-                string extension = Path.GetExtension(_inputFileName);
+                string extension = Path.GetExtension(_config.FileInputOutput.InputFileName);
+                AutoTranslatorLogger.Info($"Loading all files of type {extension} from path {_config.FileInputOutput.InputPath}.");
                 if (string.IsNullOrEmpty(extension))
                 {
                     AutoTranslatorLogger.Error("Input file name does not contain a valid extension.");
                     return;
                 }
 
-                string[] files = Directory.GetFiles(_inputPath, "*" + extension);
+                string[] files = Directory.GetFiles(_config.FileInputOutput.InputPath, "*" + extension);
                 foreach (var file in files)
                 {
                     string fileName = Path.GetFileName(file);
-                    CreateTranslatedFile(_inputPath, fileName);
+                    CreateTranslatedFile(_config.FileInputOutput.InputPath, fileName);
                 }
             }
             else
             {
-                CreateTranslatedFile(_inputPath, _inputFileName);
+                CreateTranslatedFile(_config.FileInputOutput.InputPath, _config.FileInputOutput.InputFileName);
             }
         }
 
@@ -237,10 +177,10 @@ namespace Valkyrie.AutoTranslator
             {
                 TranslateData(list, languageDataSingle);
             }
-            GenerateTranslatedFile(list, _outputPath, inputFile, _outputFileNameAdditionalPart, _csvOutputFileDelimiter);
+            GenerateTranslatedFile(list, _config.FileInputOutput.OutputPath, inputFile, _config.FileInputOutput.OutputFileNameAdditionalPart, _config.FileInputOutput.CsvOutputFileDelimiter);
 
             //Only save cache if any real changes were done
-            if (_useTranslationCache && (_translate || _useLlmApi))
+            if (_config.Cache.UseTranslationCache && (_config.Translation.Translate || _config.Llm.UseLlmApi))
             {
                 _translationCacheManager.SaveCache();
             }
@@ -267,9 +207,9 @@ namespace Valkyrie.AutoTranslator
                 return value;
             }
 
-            if (value.Equals(_sourceLanguageName))
+            if (value.Equals(_config.Translation.SourceLanguageName))
             {
-                return _targetLanguageName;
+                return _config.Translation.TargetLanguageName;
             }
 
             string[] skipValues = new string[] {
@@ -331,8 +271,8 @@ namespace Valkyrie.AutoTranslator
 
             string combinedFinal = prefix + finalTranslatedValue + suffix;
             combinedFinal = AutoTranslatorHelpers.ReplaceDoubleQuotesWithPipes(combinedFinal);
-            combinedFinal = AutoTranslatorHelpers.EnsureStartWithThreePipes(combinedFinal, _targetLanguage);
-            combinedFinal = AutoTranslatorHelpers.EnsureStartWithPipesAlsoEndsWithPipes(combinedFinal, _targetLanguage);
+            combinedFinal = AutoTranslatorHelpers.EnsureStartWithThreePipes(combinedFinal, _config.Translation.TargetLanguage);
+            combinedFinal = AutoTranslatorHelpers.EnsureStartWithPipesAlsoEndsWithPipes(combinedFinal, _config.Translation.TargetLanguage);
             combinedFinal = AutoTranslatorHelpers.ReplaceWhiteSpacesBetweenNewlines(combinedFinal);
             return combinedFinal;
         }
@@ -387,7 +327,7 @@ namespace Valkyrie.AutoTranslator
             bool errorOccurred = false;
 
             //use cached value if available
-            if (_useTranslationCache && _translationCacheManager.TryGetTranslation(value, out var cachedTranslation))
+            if (_config.Cache.UseTranslationCache && _translationCacheManager.TryGetTranslation(value, out var cachedTranslation))
             {
                 translatedValue = cachedTranslation;
                 AutoTranslatorLogger.Info($"Using cached value for: {value}");
@@ -395,16 +335,27 @@ namespace Valkyrie.AutoTranslator
             //if not cached, user the translator API
             else
             {
-                if (_translate)
+                if (_config.Translation.Translate)
                 {
                     value = AutoTranslatorHelpers.AddWhiteSpaceForLineBreaks(value);
-                    value = AutoTranslatorHelpers.AddNoTranslationTagForQuotationMarks(value, _translatorProvider);
+                    value = AutoTranslatorHelpers.AddNoTranslationTagForQuotationMarks(value, _config.Translation.TranslatorProvider);
                     value = AutoTranslatorHelpers.MarkKeepTags(value);
 
-                    if (_translatorProvider == TranslatorConstants.ApiNameDeepL)
+                    if (_config.Translation.TranslatorProvider == TranslatorConstants.ApiNameDeepL)
                     {
                         AutoTranslatorLogger.Info($"Start using DeepL translator for sentence: {value}");
-                        var tuple = DeepLTranslator.Translate(_deepLApiMode, key, value, _sourceLanguage, _targetLanguage, _deepLApiKey, _deepLGlossaryId, _deepLContextDefault, _deepLContextActivation, _deepLFormality).GetAwaiter().GetResult();
+                        var tuple = DeepLTranslator.Translate(
+                            _config.Translation.DeepL.DeepLApiMode,
+                            key,
+                            value,
+                            _config.Translation.SourceLanguage,
+                            _config.Translation.TargetLanguage,
+                            _config.Secrets.DeepLApiKey,
+                            _deepLGlossaryId,
+                            _config.Translation.DeepL.DeepLContext.Default,
+                            _config.Translation.DeepL.DeepLContext.Activation,
+                            _config.Translation.DeepL.DeepLFormality
+                        ).GetAwaiter().GetResult();
                         if (tuple.Item2) // if error occurred, use original text
                         {
                             errorOccurred = true;
@@ -427,20 +378,20 @@ namespace Valkyrie.AutoTranslator
                 // Check if the translated value contains more than one word before calling the LLM.
                 bool isSingleWord = !translatedValue.Trim().Contains(" ");
 
-                if (_useLlmApi && !isSingleWord)
+                if (_config.Llm.UseLlmApi && !isSingleWord)
                 {
                     AutoTranslatorLogger.Info($"Start using DeepSeek LLM for sentence: {translatedValue}");
 
                     // Use configured keywords
                     List<string> selectedKeyWords = key.StartsWith("activation", StringComparison.OrdinalIgnoreCase)
-                    ? _llmKeyWordsActivation
-                    : _llmKeyWordsDefault;
+                        ? (_config.Llm.LlmKeyWordsActivation ?? new List<string>())
+                        : (_config.Llm.LlmKeyWordsDefault ?? new List<string>());
 
                     bool runLlmQuery = ContainsAnyKeyWords(translatedValue, selectedKeyWords);
 
                     if (runLlmQuery)
                     {
-                        var llmResult = DeepSeekApi.ExecutePromptAsync(_deepSeekApiKey, _llmPrompt, key, translatedValue).GetAwaiter().GetResult();
+                        var llmResult = DeepSeekApi.ExecutePromptAsync(_config.Secrets.DeepSeekApiKey, _config.Llm.LlmPrompt, key, translatedValue).GetAwaiter().GetResult();
                         if (llmResult.Item2) // if error occurred, use original text
                         {
                             errorOccurred = true;
@@ -449,7 +400,7 @@ namespace Valkyrie.AutoTranslator
                         AutoTranslatorLogger.Success($"Finished using DeepSeek LLM for sentence: {value}");
                     }
                 }
-                else if (_useLlmApi && isSingleWord)
+                else if (_config.Llm.UseLlmApi && isSingleWord)
                 {
                     AutoTranslatorLogger.Info($"Skipping LLM for single-word sentence: {translatedValue}");
                 }
@@ -457,14 +408,14 @@ namespace Valkyrie.AutoTranslator
 
             // Remove <keep> tags after translation
             translatedValue = AutoTranslatorHelpers.FindAndReplacedTranslatedCurlyBracketsWords(translatedValue, curlyBracketWords);
-            translatedValue = AutoTranslatorHelpers.ReplaceQuotesWithEnglishspecialCharacterQuotation(translatedValue, _targetLanguage);
+            translatedValue = AutoTranslatorHelpers.ReplaceQuotesWithEnglishspecialCharacterQuotation(translatedValue, _config.Translation.TargetLanguage);
             translatedValue = AutoTranslatorHelpers.ReplaceBackslashNotFollowedByNWithLineBreak(translatedValue);
-            if (_translatorProvider != TranslatorConstants.ApiNameDeepL)
+            if (_config.Translation.TranslatorProvider != TranslatorConstants.ApiNameDeepL)
             {
                 translatedValue = AutoTranslatorHelpers.ReplaceDeepLSpecialGlossaryChar(translatedValue);
             }
 
-            if (_translatorProvider != TranslatorConstants.ApiNameDeepL)
+            if (_config.Translation.TranslatorProvider != TranslatorConstants.ApiNameDeepL)
             {
                 translatedValue = AutoTranslatorHelpers.ReplaceLineBreaksWithOldValue(translatedValue);
             }
