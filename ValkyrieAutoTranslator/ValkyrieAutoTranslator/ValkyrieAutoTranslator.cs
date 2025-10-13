@@ -173,9 +173,13 @@ namespace Valkyrie.AutoTranslator
             List<ValkyrieLanguageData> languageData = csvTool.GetFileLanguageData(inputPath, inputFile, false);
 
             List<ValkyrieLanguageData> list = new List<ValkyrieLanguageData>();
+            int translatedCount = 0;
+            int totalCount = languageData.Count;
             foreach (ValkyrieLanguageData languageDataSingle in languageData)
             {
                 TranslateData(list, languageDataSingle);
+                translatedCount++;
+                AutoTranslatorLogger.Info($"Translated {translatedCount}/{totalCount} lines.");
             }
             GenerateTranslatedFile(list, _config.FileInputOutput.OutputPath, inputFile, _config.FileInputOutput.OutputFileNameAdditionalPart, _config.FileInputOutput.CsvOutputFileDelimiter);
 
