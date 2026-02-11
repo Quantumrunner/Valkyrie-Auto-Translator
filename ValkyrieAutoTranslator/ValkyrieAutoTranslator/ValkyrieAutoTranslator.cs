@@ -181,6 +181,13 @@ namespace Valkyrie.AutoTranslator
                 translatedCount++;
                 AutoTranslatorLogger.Info($"Translated {translatedCount}/{totalCount} lines.");
             }
+
+            // Remove trailing empty lines
+            while (list.Count > 0 && string.IsNullOrWhiteSpace(list[list.Count - 1].Key) && string.IsNullOrWhiteSpace(list[list.Count - 1].Value))
+            {
+                list.RemoveAt(list.Count - 1);
+            }
+
             GenerateTranslatedFile(list, _config.FileInputOutput.OutputPath, inputFile, _config.FileInputOutput.OutputFileNameAdditionalPart, _config.FileInputOutput.CsvOutputFileDelimiter);
 
             //Only save cache if any real changes were done
