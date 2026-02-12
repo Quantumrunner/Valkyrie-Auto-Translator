@@ -24,6 +24,30 @@ You can run the application with different run modes:
 
 All changes will always be made line by line of the source file (also API calls will be made line by line).
 
+# File Input and Output
+
+The application offers flexible options for defining input files and where the translated files should be saved.
+
+## Recursive Search
+The application searches for files matching `inputFileName` inside `inputPath`. 
+- **Recursive**: It will search **recursively** through all subdirectories of `inputPath`.
+- **Match**: It will process **all** files that match the `inputFileName` pattern (e.g., `*.txt` or `Localization.English.txt`).
+
+## Output Location
+- **Same Folder**: If `outputPath` is set to the **same value** as `inputPath`, the translated files will be saved in the **same directory** as their source file (even if found in a subfolder).
+- **Different Folder**: If `outputPath` is different, all translated files will be properly saved to that specific output directory.
+
+## Output Filename
+You can control the name of the translated file using:
+- `outputFileName`: (Optional) specifically set the name of the output file (e.g., `Localization.German.txt`).
+- `outputFileNameAdditionalPart`: Text appended to the filename (e.g., `_translated`).
+
+Example logic:
+1. If `outputFileName` is set, it uses that name.
+2. If not, it uses the original filename.
+3. In both cases, `outputFileNameAdditionalPart` is appended before the extension.
+
+
 # DeepL API Integration
 
 This application supports both the **DeepL API Free** and **DeepL API Pro** plans. The choice between them is controlled via the `appsettings.json` file.
