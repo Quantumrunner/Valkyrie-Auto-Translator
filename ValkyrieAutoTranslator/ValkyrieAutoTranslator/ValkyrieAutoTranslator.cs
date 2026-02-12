@@ -326,7 +326,7 @@ namespace Valkyrie.AutoTranslator
             // followed by whitespace, or after one or more newlines (\n). It also handles splitting
             // around HTML tags and captures delimiters like newlines.
             // This will split the string, keeping the delimiters as separate entries in the resulting array.
-            var regex = new System.Text.RegularExpressions.Regex(@"(\s*\\n\s*|(?<=[.!?])\s+|<i>|</i>|<b>|</b>)");
+            var regex = new System.Text.RegularExpressions.Regex(@"(\s*\\n\s*|(?<=[.!?])\s+|<i>|</i>|<b>|</b>)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             var sentences = regex.Split(text).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
 
             return sentences;
@@ -350,7 +350,7 @@ namespace Valkyrie.AutoTranslator
             // Create a test string where known non-translatable tokens are removed.
             string testValue = trimmedValue;
             testValue = System.Text.RegularExpressions.Regex.Replace(testValue, @"\\n", ""); // Remove \n sequences
-            testValue = System.Text.RegularExpressions.Regex.Replace(testValue, @"</?[ib]>", ""); // Remove <i>, <b> tags
+            testValue = System.Text.RegularExpressions.Regex.Replace(testValue, @"</?[ib]>", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase); // Remove <i>, <b> tags
 
             // A string is translatable if it still contains letters after removing formatting tokens.
             bool containsRealText = System.Text.RegularExpressions.Regex.IsMatch(testValue, @"[a-zA-Z]");

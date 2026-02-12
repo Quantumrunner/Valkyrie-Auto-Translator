@@ -78,7 +78,7 @@ namespace Valkyrie.AutoTranslator
                             return new Tuple<string, bool>(translatedText, false);
                         }
                     }
-                    catch
+                    catch(Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
                     {
                         if (attempt == maxRetries - 1)
                         {
@@ -86,6 +86,11 @@ namespace Valkyrie.AutoTranslator
                         }
                         await Task.Delay(delayMs);
                         delayMs *= 2;
+                    }
+                    catch (Exception ex)
+                    {
+                        AutoTranslatorLogger.Error($"Unexpected error during DeepL translation: {ex.Message}");
+                        return new Tuple<string, bool>(text, true);
                     }
                 }
 
