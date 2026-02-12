@@ -133,11 +133,16 @@ namespace Valkyrie.AutoTranslator
                     csv.NextRecord();
                 }
 
+                int count = 0;
                 foreach (var singleData in data)
                 {
                     csv.WriteField(singleData.Key);
                     csv.WriteField(singleData.Value);
-                    csv.NextRecord();
+                    count++;
+                    if (count < data.Count)
+                    {
+                        csv.NextRecord();
+                    }
                 }
             }
         }

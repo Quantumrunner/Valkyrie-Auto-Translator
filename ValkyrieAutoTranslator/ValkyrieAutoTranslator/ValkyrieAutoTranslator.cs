@@ -154,23 +154,38 @@ namespace Valkyrie.AutoTranslator
                     return;
                 }
 
-                string[] files = Directory.GetFiles(_config.FileInputOutput.InputPath, "*" + extension);
+                // Changed to recursive search
+                string[] files = Directory.GetFiles(_config.FileInputOutput.InputPath, "*" + extension, SearchOption.AllDirectories);
                 foreach (var file in files)
                 {
-                    string fileName = Path.GetFileName(file);
-                    CreateTranslatedFile(_config.FileInputOutput.InputPath, fileName);
+                    // Pass the full path to preserve directory structure relative to input path if needed
+                    CreateTranslatedFile(_config.FileInputOutput.InputPath, file);
                 }
             }
             else
             {
-                CreateTranslatedFile(_config.FileInputOutput.InputPath, _config.FileInputOutput.InputFileName);
+                // Always search recursively for the specific filename to find all occurrences
+                string[] files = Directory.GetFiles(_config.FileInputOutput.InputPath, _config.FileInputOutput.InputFileName, SearchOption.AllDirectories);
+                
+                if (files.Length == 0)
+                {
+                     AutoTranslatorLogger.Info($"No files found matching {_config.FileInputOutput.InputFileName} in {_config.FileInputOutput.InputPath} or its subdirectories.");
+                }
+
+                foreach (var file in files)
+                {
+                    CreateTranslatedFile(_config.FileInputOutput.InputPath, file);
+                }
             }
         }
 
-        private void CreateTranslatedFile(string inputPath, string inputFile)
+        private void CreateTranslatedFile(string inputPathRoot, string inputFileFullPath)
         {
-            AutoTranslatorLogger.Info($"Start translating file {inputFile}");
-            List<ValkyrieLanguageData> languageData = csvTool.GetFileLanguageData(inputPath, inputFile, false);
+            string inputFileName = Path.GetFileName(inputFileFullPath);
+            string inputFileDirectory = Path.GetDirectoryName(inputFileFullPath);
+
+            AutoTranslatorLogger.Info($"Start translating file {inputFileName} in {inputFileDirectory}");
+            List<ValkyrieLanguageData> languageData = csvTool.GetFileLanguageData(inputFileDirectory, inputFileName, false);
 
             List<ValkyrieLanguageData> list = new List<ValkyrieLanguageData>();
             int translatedCount = 0;
@@ -188,7 +203,21 @@ namespace Valkyrie.AutoTranslator
                 list.RemoveAt(list.Count - 1);
             }
 
-            GenerateTranslatedFile(list, _config.FileInputOutput.OutputPath, inputFile, _config.FileInputOutput.OutputFileNameAdditionalPart, _config.FileInputOutput.CsvOutputFileDelimiter);
+            // Determine output path
+            string finalOutputPath = _config.FileInputOutput.OutputPath;
+            if (string.Equals(_config.FileInputOutput.InputPath, _config.FileInputOutput.OutputPath, StringComparison.OrdinalIgnoreCase))
+            {
+                finalOutputPath = inputFileDirectory;
+            }
+
+            // Determine output filename
+            string finalOutputFileName = inputFileName;
+            if (!string.IsNullOrEmpty(_config.FileInputOutput.OutputFileName))
+            {
+                finalOutputFileName = _config.FileInputOutput.OutputFileName;
+            }
+
+            GenerateTranslatedFile(list, finalOutputPath, finalOutputFileName, _config.FileInputOutput.OutputFileNameAdditionalPart, _config.FileInputOutput.CsvOutputFileDelimiter);
 
             //Only save cache if any real changes were done
             if (_config.Cache.UseTranslationCache && (_config.Translation.Translate || _config.Llm.UseLlmApi))
@@ -196,7 +225,7 @@ namespace Valkyrie.AutoTranslator
                 _translationCacheManager.SaveCache();
             }
 
-            AutoTranslatorLogger.Info($"Finished translating file {inputFile}");
+            AutoTranslatorLogger.Info($"Finished translating file {inputFileName}");
         }
 
         private void GenerateTranslatedFile(List<ValkyrieLanguageData> translatedData, string path, string fileNameOld, string fileNameNewAdditionalPart, string delimiter)

@@ -62,6 +62,7 @@ namespace ValkyrieAutoTranslator.Data
             public string InputPath { get; set; }
             public string InputFileName { get; set; }
             public string OutputPath { get; set; }
+            public string OutputFileName { get; set; }
             public string OutputFileNameAdditionalPart { get; set; }
             public string CsvOutputFileDelimiter { get; set; }
         }
