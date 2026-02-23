@@ -385,5 +385,20 @@ namespace Valkyrie.AutoTranslator
             // Replace all occurrences of the special char with a whitespace
             return translatedValue.Replace($"{DeepLTranslator.SpecialGlossaryChar}", " ");
         }
+
+        internal static string SanitizeXmlTags(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return value;
+
+            // Fix malformed closing tags like </ i> -> </i>
+            // Matches </ followed by whitespace, then i or b, then optionally whitespace, then >
+            value = Regex.Replace(value, @"<\s*/\s*([ib])\s*>", "</$1>", RegexOptions.IgnoreCase);
+
+            // Fix malformed opening tags like < i> -> <i>
+            // Matches < followed by whitespace, then i or b, then optionally whitespace, then >
+            value = Regex.Replace(value, @"<\s*([ib])\s*>", "<$1>", RegexOptions.IgnoreCase);
+
+            return value;
+        }
     }
 }

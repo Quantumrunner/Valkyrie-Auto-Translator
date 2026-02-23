@@ -277,10 +277,11 @@ namespace Valkyrie.AutoTranslator
             }
             else if (AutoTranslatorHelpers.IsEncapsulatedWithQuotes(coreValue))
             {
-                prefix = coreValue.Substring(0, 1);
-                suffix = coreValue.Substring(coreValue.Length - 1, 1);
                 coreValue = coreValue.Substring(1, coreValue.Length - 2);
             }
+
+            // Sanitize XML tags before splitting (e.g. fix "</ i>" to "</i>")
+            coreValue = AutoTranslatorHelpers.SanitizeXmlTags(coreValue);
 
             var sentences = SplitIntoSentences(coreValue);
             var translatedSentences = new List<string>();
